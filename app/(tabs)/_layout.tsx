@@ -14,8 +14,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#4a9d7a',
-        tabBarInactiveTintColor: '#888',
+        tabBarActiveTintColor: '#87CEEB', // Sky blue for active tabs
+        tabBarInactiveTintColor: '#6B8FA8', // Muted sky blue for inactive tabs
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
@@ -23,9 +23,9 @@ export default function TabLayout() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: 'rgba(11, 29, 42, 0.95)',
+          backgroundColor: 'rgba(11, 29, 42, 0.95)', // Deep navy background
           borderTopWidth: 1,
-          borderTopColor: 'rgba(74, 157, 122, 0.3)',
+          borderTopColor: 'rgba(135, 206, 235, 0.3)', // Sky blue border
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom + 8,
           paddingTop: 8,

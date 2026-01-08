@@ -98,11 +98,11 @@ export default function HomeScreen() {
 
       {/* Dialogue box */}
       {current && current.character !== "power" && (
-        <DialogueBox
-          text={current.text}
-          onComplete={() => setCanAdvance(true)}
-        />
-      )}
+  <DialogueBox
+    text={current.text}
+    onComplete={() => setCanAdvance(true)}
+  />
+)}
 
       {/* Begin Button */}
       {showButton && (
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 80,
     fontSize: 32,
-    color: "#fff",
+    color: "#d56e3e",
     fontWeight: "bold",
   },
   subtitle: {
