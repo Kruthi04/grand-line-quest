@@ -35,6 +35,7 @@ export default function Level1Screen() {
   const [showCutscene, setShowCutscene] = useState(false);
   const [showPowerup, setShowPowerup] = useState(false);
   const [showMatchaVideo, setShowMatchaVideo] = useState(false);
+  const [showReward, setShowReward] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Initialize game
@@ -188,6 +189,9 @@ export default function Level1Screen() {
       <View style={styles.container}>
         <Text style={styles.powerupTitle}>Power Unlocked!</Text>
         <Text style={styles.powerupText}>Observation Haki</Text>
+        <Text style={styles.rewardReminder}>
+          Collect your reward before going to the next level.
+        </Text>
         <PrimaryButton title="Continue" onPress={handlePowerup} />
       </View>
     );
@@ -306,7 +310,15 @@ const styles = StyleSheet.create({
   powerupText: {
     color: "#4a9d7a",
     fontSize: 24,
+    marginBottom: 20,
+  },
+  rewardReminder: {
+    color: "#ffd700",
+    fontSize: 18,
+    textAlign: "center",
     marginBottom: 40,
+    fontStyle: "italic",
+    paddingHorizontal: 20,
   },
   resetButton: {
     marginTop: 20,
@@ -337,5 +349,36 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  rewardContainer: {
+    flex: 1,
+    backgroundColor: "#0b1d2a",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  rewardCard: {
+    width: "100%",
+    maxWidth: 400,
+    padding: 30,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    borderRadius: 16,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#ffd700",
+  },
+  rewardTitle: {
+    color: "#ffd700",
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  rewardMessage: {
+    color: "#fff",
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 30,
+    lineHeight: 26,
   },
 });

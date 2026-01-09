@@ -3,7 +3,7 @@ import PrimaryButton from "@/components/PrimaryButton";
 import { useGame } from "@/context/GameContext";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 // Simple tile rotation puzzle
 const INITIAL_TILES = [
@@ -111,6 +111,10 @@ export default function Level2Screen() {
     increasePower(1);
     unlockLevel(3);
     completeLevel(2);
+    setShowReward(true);
+  };
+
+  const handleRewardContinue = () => {
     router.push("/map");
   };
 
@@ -120,8 +124,22 @@ export default function Level2Screen() {
     increasePower(1);
     unlockLevel(3);
     completeLevel(2);
-    router.push("/map");
+    setShowReward(true);
   };
+
+  if (showReward) {
+    return (
+      <View style={styles.rewardContainer}>
+        <View style={styles.rewardCard}>
+          <Text style={styles.rewardTitle}>🎉 Level Complete!</Text>
+          <Text style={styles.rewardMessage}>
+            Collect your reward for completing the level.
+          </Text>
+          <PrimaryButton title="Continue" onPress={handleRewardContinue} />
+        </View>
+      </View>
+    );
+  }
 
   if (showCutscene) {
     return (
@@ -132,20 +150,6 @@ export default function Level2Screen() {
           onComplete={handleCutsceneComplete}
           duration={2000}
         />
-      </View>
-    );
-  }
-
-  if (showReward) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.rewardTitle}>Reward Unlocked!</Text>
-        <Text style={styles.rewardText}>Manga Gift</Text>
-        <Image
-          source={require("@/assets/images/Characters/Zoro.png")}
-          style={styles.rewardImage}
-        />
-        <PrimaryButton title="Continue" onPress={handleComplete} />
       </View>
     );
   }
@@ -268,6 +272,37 @@ const styles = StyleSheet.create({
     height: 150,
     marginBottom: 30,
   },
+  rewardContainer: {
+    flex: 1,
+    backgroundColor: "#0b1d2a",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  rewardCard: {
+    width: "100%",
+    maxWidth: 400,
+    padding: 30,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    borderRadius: 16,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#ffd700",
+  },
+  rewardTitle: {
+    color: "#ffd700",
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  rewardMessage: {
+    color: "#fff",
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 30,
+    lineHeight: 26,
+  },
   skipButton: {
     position: "absolute",
     top: 50,
@@ -284,5 +319,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  videoContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#000",
   },
 });

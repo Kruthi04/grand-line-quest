@@ -1,3 +1,5 @@
+import CutscenePlayer from "@/components/CutscenePlayer";
+import PrimaryButton from "@/components/PrimaryButton";
 import { useGame } from "@/context/GameContext";
 import { Audio } from "expo-av";
 import { useRouter } from "expo-router";
@@ -33,8 +35,11 @@ export default function Level4Screen() {
     completeLevel,
     fadeOutHomeMusic,
     setLastChiragLevel,
+    isLevelCompleted,
   } = useGame();
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const [showReward, setShowReward] = useState(false);
   const [tiles, setTiles] = useState([]);
   const [hits, setHits] = useState(0);
   const [misses, setMisses] = useState(0);
@@ -49,11 +54,19 @@ export default function Level4Screen() {
   const audioPlayedMsRef = useRef(0);
   const idCounter = useRef(0);
   const spawnIntervalRef = useRef(null);
+  const hasPlayedVideoRef = useRef(false);
 
   useEffect(() => {
     const requiredPower = getRequiredPower(4);
-    setIsUnlocked(power >= requiredPower);
-  }, [power, getRequiredPower]);
+    const unlocked = power >= requiredPower;
+    const completed = isLevelCompleted(4);
+    setIsUnlocked(unlocked);
+    // Show video only the first time level is unlocked and not yet completed
+    if (unlocked && !completed && !hasPlayedVideoRef.current) {
+      setShowVideo(true);
+      hasPlayedVideoRef.current = true;
+    }
+  }, [power, getRequiredPower, isLevelCompleted]);
 
   // Fade out home music and start simple background track
   useEffect(() => {
@@ -97,9 +110,9 @@ export default function Level4Screen() {
     };
   }, [fadeOutHomeMusic]);
 
-  // Start spawning tiles when unlocked
+  // Start spawning tiles when unlocked and video has finished
   useEffect(() => {
-    if (!isUnlocked || gameOver) return;
+    if (!isUnlocked || gameOver || showVideo) return;
 
     const spawnTile = () => {
       const lane = Math.floor(Math.random() * LANES);
@@ -140,7 +153,7 @@ export default function Level4Screen() {
         clearInterval(spawnIntervalRef.current);
       }
     };
-  }, [isUnlocked, gameOver]);
+  }, [isUnlocked, gameOver, showVideo]);
 
   const playNoteSound = async () => {
     if (noteSoundRef.current) {
@@ -214,8 +227,42 @@ export default function Level4Screen() {
     increasePower(1);
     unlockLevel(5);
     completeLevel(4);
+    setShowReward(true);
+  };
+
+  const handleRewardContinue = () => {
     router.push("/map");
   };
+
+  const handleVideoComplete = () => {
+    setShowVideo(false);
+  };
+
+  if (showReward) {
+    return (
+      <View style={styles.rewardContainer}>
+        <View style={styles.rewardCard}>
+          <Text style={styles.rewardTitle}>🎉 Level Complete!</Text>
+          <Text style={styles.rewardMessage}>
+            Collect your reward for completing the level.
+          </Text>
+          <PrimaryButton title="Continue" onPress={handleRewardContinue} />
+        </View>
+      </View>
+    );
+  }
+
+  if (showVideo && isUnlocked) {
+    return (
+      <View style={styles.videoContainer}>
+        <CutscenePlayer
+          videoSource={require("@/assets/videos/ChiragLuffySongVideo.mp4")}
+          onComplete={handleVideoComplete}
+          resizeMode="cover"
+        />
+      </View>
+    );
+  }
 
   if (!isUnlocked) {
     const requiredPower = getRequiredPower(4);
@@ -324,6 +371,12 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
   },
+  videoContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#000",
+  },
   levelTitle: {
     color: "#fff",
     fontSize: 28,
@@ -408,11 +461,18 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
     marginTop: 12,
+    marginBottom: 10,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    borderRadius: 8,
+    width: "100%",
   },
   footerText: {
-    color: "#ccc",
-    fontSize: 14,
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
   lockedText: {
     color: "#ccc",
@@ -459,5 +519,36 @@ const styles = StyleSheet.create({
   },
   titleTouchable: {
     alignItems: "center",
+  },
+  rewardContainer: {
+    flex: 1,
+    backgroundColor: "#0b1d2a",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  rewardCard: {
+    width: "100%",
+    maxWidth: 400,
+    padding: 30,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    borderRadius: 16,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#ffd700",
+  },
+  rewardTitle: {
+    color: "#ffd700",
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  rewardMessage: {
+    color: "#fff",
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 30,
+    lineHeight: 26,
   },
 });
