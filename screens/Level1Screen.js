@@ -17,8 +17,13 @@ const MEMORY_IMAGES = [
 
 export default function Level1Screen() {
   const router = useRouter();
-  const { increasePower, unlockLevel, completeLevel, fadeOutHomeMusic } =
-    useGame();
+  const {
+    increasePower,
+    unlockLevel,
+    completeLevel,
+    fadeOutHomeMusic,
+    setLastChiragLevel,
+  } = useGame();
   const [cards, setCards] = useState([]);
 
   // Fade out home music when level loads
@@ -138,6 +143,8 @@ export default function Level1Screen() {
   };
 
   const handleMatchaVideoComplete = () => {
+    // Remember that Chirag was at level 1 before unlocking the next level
+    setLastChiragLevel(1);
     increasePower(1);
     unlockLevel(2);
     completeLevel(1);
@@ -145,6 +152,8 @@ export default function Level1Screen() {
   };
 
   const handleSkip = () => {
+    // Remember that Chirag was at level 1 before unlocking the next level
+    setLastChiragLevel(1);
     increasePower(1);
     unlockLevel(2);
     completeLevel(1);

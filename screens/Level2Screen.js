@@ -27,6 +27,7 @@ export default function Level2Screen() {
     unlockLevel,
     completeLevel,
     fadeOutHomeMusic,
+    setLastChiragLevel,
   } = useGame();
   const [tiles, setTiles] = useState(INITIAL_TILES);
 
@@ -105,6 +106,8 @@ export default function Level2Screen() {
   };
 
   const handleComplete = () => {
+    // Remember that Chirag was at level 2 before unlocking the next level
+    setLastChiragLevel(2);
     increasePower(1);
     unlockLevel(3);
     completeLevel(2);
@@ -112,6 +115,8 @@ export default function Level2Screen() {
   };
 
   const handleSkip = () => {
+    // Remember that Chirag was at level 2 before unlocking the next level
+    setLastChiragLevel(2);
     increasePower(1);
     unlockLevel(3);
     completeLevel(2);

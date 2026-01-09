@@ -26,6 +26,7 @@ export default function Level3Screen() {
     unlockLevel,
     completeLevel,
     fadeOutHomeMusic,
+    setLastChiragLevel,
   } = useGame();
   const [input, setInput] = useState("");
 
@@ -57,6 +58,8 @@ export default function Level3Screen() {
   };
 
   const handleComplete = () => {
+    // Remember that Chirag was at level 3 before unlocking the next level
+    setLastChiragLevel(3);
     increasePower(1);
     unlockLevel(4);
     completeLevel(3);
@@ -64,6 +67,8 @@ export default function Level3Screen() {
   };
 
   const handleSkip = () => {
+    // Remember that Chirag was at level 3 before unlocking the next level
+    setLastChiragLevel(3);
     increasePower(1);
     unlockLevel(4);
     completeLevel(3);

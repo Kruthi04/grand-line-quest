@@ -173,7 +173,7 @@ export default function HomeScreen() {
           colors={["transparent", "rgba(0, 0, 0, 0.15)", "rgba(0, 0, 0, 0.25)"]}
           locations={[0, 0.4, 1]}
           style={styles.foregroundBoost}
-        />
+              />
       </View>
       <Animated.View
         style={[
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     shadowOffset: {
       width: 0,
       height: 8,
-    },
+  },
     shadowOpacity: 0.4,
     shadowRadius: 20,
     elevation: 10,

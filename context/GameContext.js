@@ -8,6 +8,8 @@ export function GameProvider({ children }) {
   const [completedLevels, setCompletedLevels] = useState([]);
   const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
   const [homeScreenSound, setHomeScreenSound] = useState(null);
+  // Track the last level where Chirag was standing on the map
+  const [lastChiragLevel, setLastChiragLevel] = useState(1);
 
   const unlockLevel = (level) => {
     if (!unlockedLevels.includes(level)) {
@@ -102,6 +104,7 @@ export function GameProvider({ children }) {
         power,
         unlockedLevels,
         completedLevels,
+        lastChiragLevel,
         hasPlayedAudio,
         setHasPlayedAudio,
         homeScreenSound,
@@ -115,6 +118,7 @@ export function GameProvider({ children }) {
         isLevelUnlocked,
         isLevelCompleted,
         getRequiredPower,
+        setLastChiragLevel,
       }}
     >
       {children}
