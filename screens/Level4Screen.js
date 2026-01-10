@@ -38,8 +38,9 @@ export default function Level4Screen() {
     isLevelCompleted,
   } = useGame();
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
+  const [showCompletionVideo, setShowCompletionVideo] = useState(false);
   const [showReward, setShowReward] = useState(false);
+  const [showHoodieVideo, setShowHoodieVideo] = useState(false);
   const [tiles, setTiles] = useState([]);
   const [hits, setHits] = useState(0);
   const [misses, setMisses] = useState(0);
@@ -54,19 +55,12 @@ export default function Level4Screen() {
   const audioPlayedMsRef = useRef(0);
   const idCounter = useRef(0);
   const spawnIntervalRef = useRef(null);
-  const hasPlayedVideoRef = useRef(false);
 
   useEffect(() => {
     const requiredPower = getRequiredPower(4);
     const unlocked = power >= requiredPower;
-    const completed = isLevelCompleted(4);
     setIsUnlocked(unlocked);
-    // Show video only the first time level is unlocked and not yet completed
-    if (unlocked && !completed && !hasPlayedVideoRef.current) {
-      setShowVideo(true);
-      hasPlayedVideoRef.current = true;
-    }
-  }, [power, getRequiredPower, isLevelCompleted]);
+  }, [power, getRequiredPower]);
 
   // Fade out home music and start simple background track
   useEffect(() => {
@@ -110,9 +104,9 @@ export default function Level4Screen() {
     };
   }, [fadeOutHomeMusic]);
 
-  // Start spawning tiles when unlocked and video has finished
+  // Start spawning tiles when unlocked and game hasn't ended
   useEffect(() => {
-    if (!isUnlocked || gameOver || showVideo) return;
+    if (!isUnlocked || gameOver || showCompletionVideo || showReward) return;
 
     const spawnTile = () => {
       const lane = Math.floor(Math.random() * LANES);
@@ -153,7 +147,7 @@ export default function Level4Screen() {
         clearInterval(spawnIntervalRef.current);
       }
     };
-  }, [isUnlocked, gameOver, showVideo]);
+  }, [isUnlocked, gameOver, showCompletionVideo, showReward]);
 
   const playNoteSound = async () => {
     if (noteSoundRef.current) {
@@ -227,37 +221,68 @@ export default function Level4Screen() {
     increasePower(1);
     unlockLevel(5);
     completeLevel(4);
-    setShowReward(true);
+    setGameOver(true);
+    setShowCompletionVideo(true);
   };
 
   const handleRewardContinue = () => {
+    setShowReward(false);
+    setShowHoodieVideo(true);
+  };
+
+  const handleHoodieVideoComplete = () => {
     router.push("/map");
   };
 
-  const handleVideoComplete = () => {
-    setShowVideo(false);
+  const handleCompletionVideoComplete = () => {
+    setShowCompletionVideo(false);
+    setShowReward(true);
   };
+
+  if (showHoodieVideo) {
+    return (
+      <View style={styles.videoContainer}>
+        <CutscenePlayer
+          videoSource={require("@/assets/videos/hoodie final.mp4")}
+          onComplete={handleHoodieVideoComplete}
+          resizeMode="cover"
+        />
+      </View>
+    );
+  }
 
   if (showReward) {
     return (
       <View style={styles.rewardContainer}>
         <View style={styles.rewardCard}>
-          <Text style={styles.rewardTitle}>🎉 Level Complete!</Text>
-          <Text style={styles.rewardMessage}>
-            Collect your reward for completing the level.
-          </Text>
-          <PrimaryButton title="Continue" onPress={handleRewardContinue} />
+          {/* Decorative corner elements */}
+          <View style={styles.cornerDecorLeft} />
+          <View style={styles.cornerDecorRight} />
+
+          {/* Star decorations */}
+          <Text style={styles.starDecor1}>✦</Text>
+          <Text style={styles.starDecor2}>✦</Text>
+
+          <View style={styles.rewardContent}>
+            <Text style={styles.rewardBadge}>✓</Text>
+            <Text style={styles.rewardTitle}>LEVEL COMPLETE!</Text>
+            <View style={styles.dividerLine} />
+            <Text style={styles.rewardMessage}>
+              Collect your reward for completing the level.
+            </Text>
+            <PrimaryButton title="Continue" onPress={handleRewardContinue} />
+          </View>
         </View>
       </View>
     );
   }
 
-  if (showVideo && isUnlocked) {
+  if (showCompletionVideo) {
     return (
       <View style={styles.videoContainer}>
         <CutscenePlayer
           videoSource={require("@/assets/videos/ChiragLuffySongVideo.mp4")}
-          onComplete={handleVideoComplete}
+          onComplete={handleCompletionVideoComplete}
           resizeMode="cover"
         />
       </View>
@@ -528,27 +553,98 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   rewardCard: {
-    width: "100%",
-    maxWidth: 400,
-    padding: 30,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    borderRadius: 16,
+    width: "90%",
+    maxWidth: 380,
+    backgroundColor: "#1a1a2e",
+    borderRadius: 24,
     alignItems: "center",
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: "#ffd700",
+    shadowColor: "#ffd700",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 12,
+    overflow: "hidden",
+    position: "relative",
+  },
+  cornerDecorLeft: {
+    position: "absolute",
+    top: -1,
+    left: -1,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: "#ffd700",
+    borderTopLeftRadius: 24,
+  },
+  cornerDecorRight: {
+    position: "absolute",
+    bottom: -1,
+    right: -1,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: "#ffd700",
+    borderBottomRightRadius: 24,
+  },
+  starDecor1: {
+    position: "absolute",
+    top: 15,
+    left: 20,
+    fontSize: 24,
+    color: "#ffd700",
+    opacity: 0.6,
+  },
+  starDecor2: {
+    position: "absolute",
+    top: 15,
+    right: 20,
+    fontSize: 24,
+    color: "#ffd700",
+    opacity: 0.6,
+  },
+  rewardContent: {
+    width: "100%",
+    padding: 28,
+    alignItems: "center",
+    zIndex: 1,
+  },
+  rewardBadge: {
+    fontSize: 64,
+    color: "#ffd700",
+    marginBottom: 12,
+    textShadowColor: "rgba(255, 215, 0, 0.8)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
   rewardTitle: {
     color: "#ffd700",
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 20,
+    fontSize: 24,
+    fontWeight: "900",
+    letterSpacing: 2,
+    marginBottom: 16,
     textAlign: "center",
+    textTransform: "uppercase",
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  dividerLine: {
+    width: "80%",
+    height: 2,
+    backgroundColor: "#ffd700",
+    marginBottom: 20,
+    opacity: 0.5,
   },
   rewardMessage: {
-    color: "#fff",
-    fontSize: 18,
+    color: "#e0e0e0",
+    fontSize: 16,
     textAlign: "center",
-    marginBottom: 30,
-    lineHeight: 26,
+    marginBottom: 28,
+    lineHeight: 24,
+    fontWeight: "500",
   },
 });

@@ -54,6 +54,8 @@ export default function Level3Screen() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showReward, setShowReward] = useState(false);
   const [showHarmonicaVideo, setShowHarmonicaVideo] = useState(false);
+  const [showOopsVideo, setShowOopsVideo] = useState(false);
+  const [showWrongAnswerMessage, setShowWrongAnswerMessage] = useState(false);
   const [hintLevel, setHintLevel] = useState(0); // 0 = poem only, 1..3 = progressively more hints
   const [expandedHints, setExpandedHints] = useState({}); // Track which hint boxes are expanded
   const [showVideo, setShowVideo] = useState(false);
@@ -61,6 +63,7 @@ export default function Level3Screen() {
   const pageSoundRef = useRef(null);
   const successOpacity = useRef(new Animated.Value(0)).current;
   const hasPlayedVideoRef = useRef(false);
+  const oopsVideoIndexRef = useRef(0); // Track which oops video to show (0 = oops.mp4, 1 = oops2.mp4)
 
   // Fade out home music when level loads
   useEffect(() => {
@@ -167,9 +170,9 @@ export default function Level3Screen() {
         useNativeDriver: true,
       }).start();
     } else {
-      alert(
-        "Incorrect. Try again! Make sure the words are in the right order."
-      );
+      // Show video based on current index (0 = oops.mp4, 1 = oops2.mp4)
+      // Index will be incremented after video completes for next time
+      setShowOopsVideo(true);
     }
   };
 
@@ -191,6 +194,18 @@ export default function Level3Screen() {
     router.push("/map");
   };
 
+  const handleOopsVideoComplete = () => {
+    setShowOopsVideo(false);
+    setShowWrongAnswerMessage(true);
+    // Increment index for next wrong answer (alternate between 0 and 1)
+    oopsVideoIndexRef.current = (oopsVideoIndexRef.current + 1) % 2;
+    // Auto-return to game after 2 seconds
+    setTimeout(() => {
+      setShowWrongAnswerMessage(false);
+      setInput(""); // Clear the input field
+    }, 2000);
+  };
+
   const handleSkip = () => {
     // Remember that Chirag was at level 3 before unlocking the next level
     setLastChiragLevel(3);
@@ -203,6 +218,36 @@ export default function Level3Screen() {
   const handleVideoComplete = () => {
     setShowVideo(false);
   };
+
+  if (showWrongAnswerMessage) {
+    return (
+      <View style={styles.messageContainer}>
+        <View style={styles.messageCard}>
+          <Text style={styles.messageText}>It's a wrong answer</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (showOopsVideo) {
+    // First wrong answer: index 0 -> oops.mp4
+    // Second wrong answer: index 1 -> oops2.mp4 (after first increment)
+    // Third wrong answer: index 0 -> oops.mp4 (after second increment wraps back)
+    const currentVideoIndex = oopsVideoIndexRef.current;
+    return (
+      <View style={styles.videoContainer}>
+        <CutscenePlayer
+          videoSource={
+            currentVideoIndex === 1
+              ? require("@/assets/videos/oops2.mp4")
+              : require("@/assets/videos/oops.mp4")
+          }
+          onComplete={handleOopsVideoComplete}
+          resizeMode="cover"
+        />
+      </View>
+    );
+  }
 
   if (showVideo && isUnlocked) {
     return (
@@ -232,11 +277,23 @@ export default function Level3Screen() {
     return (
       <View style={styles.rewardContainer}>
         <View style={styles.rewardCard}>
-          <Text style={styles.rewardTitle}>🎉 Level Complete!</Text>
-          <Text style={styles.rewardMessage}>
-            Collect your reward for completing the level.
-          </Text>
-          <PrimaryButton title="Continue" onPress={handleRewardContinue} />
+          {/* Decorative corner elements */}
+          <View style={styles.cornerDecorLeft} />
+          <View style={styles.cornerDecorRight} />
+
+          {/* Star decorations */}
+          <Text style={styles.starDecor1}>✦</Text>
+          <Text style={styles.starDecor2}>✦</Text>
+
+          <View style={styles.rewardContent}>
+            <Text style={styles.rewardBadge}>✓</Text>
+            <Text style={styles.rewardTitle}>LEVEL COMPLETE!</Text>
+            <View style={styles.dividerLine} />
+            <Text style={styles.rewardMessage}>
+              Collect your reward for completing the level.
+            </Text>
+            <PrimaryButton title="Continue" onPress={handleRewardContinue} />
+          </View>
         </View>
       </View>
     );
@@ -649,6 +706,114 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   rewardCard: {
+    width: "90%",
+    maxWidth: 380,
+    backgroundColor: "#1a1a2e",
+    borderRadius: 24,
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "#ffd700",
+    shadowColor: "#ffd700",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 12,
+    overflow: "hidden",
+    position: "relative",
+  },
+  cornerDecorLeft: {
+    position: "absolute",
+    top: -1,
+    left: -1,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: "#ffd700",
+    borderTopLeftRadius: 24,
+  },
+  cornerDecorRight: {
+    position: "absolute",
+    bottom: -1,
+    right: -1,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: "#ffd700",
+    borderBottomRightRadius: 24,
+  },
+  starDecor1: {
+    position: "absolute",
+    top: 15,
+    left: 20,
+    fontSize: 24,
+    color: "#ffd700",
+    opacity: 0.6,
+  },
+  starDecor2: {
+    position: "absolute",
+    top: 15,
+    right: 20,
+    fontSize: 24,
+    color: "#ffd700",
+    opacity: 0.6,
+  },
+  rewardContent: {
+    width: "100%",
+    padding: 28,
+    alignItems: "center",
+    zIndex: 1,
+  },
+  rewardBadge: {
+    fontSize: 64,
+    color: "#ffd700",
+    marginBottom: 12,
+    textShadowColor: "rgba(255, 215, 0, 0.8)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
+  },
+  rewardTitle: {
+    color: "#ffd700",
+    fontSize: 24,
+    fontWeight: "900",
+    letterSpacing: 2,
+    marginBottom: 16,
+    textAlign: "center",
+    textTransform: "uppercase",
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  dividerLine: {
+    width: "80%",
+    height: 2,
+    backgroundColor: "#ffd700",
+    marginBottom: 20,
+    opacity: 0.5,
+  },
+  rewardMessage: {
+    color: "#e0e0e0",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 28,
+    lineHeight: 24,
+    fontWeight: "500",
+  },
+  videoContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#000",
+  },
+  messageContainer: {
+    flex: 1,
+    backgroundColor: "#0b1d2a",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  messageCard: {
     width: "100%",
     maxWidth: 400,
     padding: 30,
@@ -656,26 +821,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#ffd700",
+    borderColor: "#ff6b6b",
   },
-  rewardTitle: {
-    color: "#ffd700",
-    fontSize: 28,
+  messageText: {
+    color: "#ff6b6b",
+    fontSize: 24,
     fontWeight: "700",
-    marginBottom: 20,
     textAlign: "center",
-  },
-  rewardMessage: {
-    color: "#fff",
-    fontSize: 18,
-    textAlign: "center",
-    marginBottom: 30,
-    lineHeight: 26,
-  },
-  videoContainer: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#000",
   },
 });

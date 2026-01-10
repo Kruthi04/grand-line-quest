@@ -1,7 +1,7 @@
 import { useGame } from "@/context/GameContext";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
   StyleSheet,
@@ -10,8 +10,10 @@ import {
   View,
 } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
@@ -202,6 +204,75 @@ function PathLine({
   );
 }
 
+// Component for animated hint popup
+function AnimatedHint() {
+  const glow = useSharedValue(0.5);
+  const fadeIn = useSharedValue(0);
+
+  useEffect(() => {
+    // Initial fade-in animation
+    fadeIn.value = withTiming(1, {
+      duration: 800,
+      easing: Easing.out(Easing.ease),
+    });
+
+    // Pulsing glow animation - infinite repeat with stronger effect
+    glow.value = withRepeat(
+      withTiming(1, {
+        duration: 1500,
+        easing: Easing.inOut(Easing.ease),
+      }),
+      -1, // infinite repeats
+      true // reverse animation
+    );
+  }, []);
+
+  const textStyle = useAnimatedStyle(() => {
+    const intensity = glow.value;
+    const opacityValue = (0.8 + (intensity - 0.5) * 0.4) * fadeIn.value; // Pulse from 0.8 to 1.0, multiplied by fadeIn
+    const scaleValue = (1 + (intensity - 0.5) * 0.08) * fadeIn.value; // Scale pulse, multiplied by fadeIn
+
+    return {
+      opacity: opacityValue,
+      transform: [{ scale: scaleValue }],
+    };
+  });
+
+  const containerGlow = useAnimatedStyle(() => {
+    const intensity = glow.value;
+    const shadowOpacity = (0.6 + intensity * 0.4) * fadeIn.value; // Scale from 0.6 to 1.0, multiplied by fadeIn
+    const shadowRadius = (15 + (intensity - 0.5) * 30) * fadeIn.value; // Scale from 15 to 45, multiplied by fadeIn
+
+    return {
+      shadowColor: "#8B6F47",
+      shadowOpacity: shadowOpacity,
+      shadowRadius: shadowRadius,
+      shadowOffset: { width: 0, height: 0 },
+    };
+  });
+
+  // Create a glow overlay for additional visual effect
+  const glowOverlayStyle = useAnimatedStyle(() => {
+    const intensity = glow.value;
+    const overlayOpacity = (intensity - 0.5) * 0.4 * fadeIn.value; // Scale from 0 to 0.2, multiplied by fadeIn
+    const overlayScale = fadeIn.value * (1 + (intensity - 0.5) * 0.1); // Scale from 1.0 to 1.05, multiplied by fadeIn
+
+    return {
+      opacity: overlayOpacity,
+      transform: [{ scale: overlayScale }],
+    };
+  });
+
+  return (
+    <Animated.View style={[styles.hintContainer, containerGlow]}>
+      <Animated.View style={[styles.hintGlowOverlay, glowOverlayStyle]} />
+      <Animated.Text style={[styles.hintText, textStyle]}>
+        Click on Shanks to begin your journey
+      </Animated.Text>
+    </Animated.View>
+  );
+}
+
 // Component for Chirag character that moves along the path
 function ChiragCharacter({
   previousLevelId,
@@ -277,6 +348,9 @@ export default function MapScreen() {
   const unlockedLevelsFromContext = (gameContext as any).unlockedLevels || [1];
   const lastChiragLevel = (gameContext as any).lastChiragLevel || 1;
 
+  // Show hint only when no levels are completed (first visit)
+  const [showHint, setShowHint] = useState(completedLevels.length === 0);
+
   // Resume home music if it exists when on map screen
   useEffect(() => {
     const homeScreenSound = (gameContext as any).homeScreenSound;
@@ -286,8 +360,19 @@ export default function MapScreen() {
     }
   }, [gameContext]);
 
+  // Update hint visibility when levels are completed
+  useEffect(() => {
+    if (completedLevels.length > 0) {
+      setShowHint(false);
+    }
+  }, [completedLevels.length]);
+
   const handleLevelPress = (levelId: number) => {
     if (isLevelUnlocked(levelId)) {
+      // Hide hint when user interacts with a level
+      if (showHint) {
+        setShowHint(false);
+      }
       router.push(`/level/${levelId}`);
     }
   };
@@ -364,6 +449,9 @@ export default function MapScreen() {
           />
         );
       })}
+
+      {/* Initial hint for first-time users */}
+      {showHint && <AnimatedHint />}
     </View>
   );
 }
@@ -484,5 +572,39 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.8,
     shadowRadius: 8,
+  },
+  hintContainer: {
+    position: "absolute",
+    top: "52%",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 100,
+    paddingHorizontal: 20,
+    transform: [{ translateY: -10 }],
+  },
+  hintGlowOverlay: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: 300,
+    height: 60,
+    marginLeft: -150,
+    marginTop: -30,
+    backgroundColor: "#8B6F47",
+    borderRadius: 30,
+    opacity: 0.3,
+    zIndex: -1,
+  },
+  hintText: {
+    fontSize: 20,
+    color: "#4E342E",
+    fontWeight: "bold",
+    textAlign: "center",
+    textShadowColor: "rgba(139, 111, 71, 0.8)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+    zIndex: 1,
   },
 });
