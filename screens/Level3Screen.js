@@ -104,7 +104,9 @@ export default function Level3Screen() {
     increasePower,
     unlockLevel,
     completeLevel,
-    fadeOutHomeMusic,
+    // fadeOutHomeMusic,
+    lowerHomeMusic,
+    resumeHomeMusic,
     setLastChiragLevel,
     isLevelCompleted,
   } = useGame();
@@ -127,9 +129,9 @@ export default function Level3Screen() {
   const oopsVideoIndexRef = useRef(0); // Track which oops video to show (0 = oops.mp4, 1 = oops2.mp4)
 
   // Fade out home music when level loads
-  useEffect(() => {
-    fadeOutHomeMusic();
-  }, [fadeOutHomeMusic]);
+  // useEffect(() => {
+  //   fadeOutHomeMusic();
+  // }, [fadeOutHomeMusic]);
   const [showCutscene, setShowCutscene] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
@@ -175,7 +177,7 @@ export default function Level3Screen() {
   const normalizeSentence = (text) => {
     return text
       .toLowerCase()
-      .replace(/[’']/g, "") // ignore apostrophes
+      .replace(/['']/g, "") // ignore apostrophes
       .replace(/\s+/g, " ")
       .trim();
   };
@@ -244,10 +246,12 @@ export default function Level3Screen() {
 
   const handleRewardContinue = () => {
     setShowReward(false);
+    lowerHomeMusic();
     setShowHarmonicaVideo(true);
   };
 
   const handleHarmonicaVideoComplete = () => {
+    resumeHomeMusic();
     router.push("/map");
   };
 
@@ -543,7 +547,7 @@ export default function Level3Screen() {
               value={input}
               onChangeText={setInput}
               placeholder="Type the full sentence"
-              placeholderTextColor="rgba(255, 255, 255, 0.7)"
+              placeholderTextColor="rgba(5, 28, 3, 0.28)"
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -747,7 +751,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffeb3b",
     borderTopWidth: 2,
     borderTopColor: "#c99d5f",
     maxHeight: 300,
@@ -769,20 +773,20 @@ const styles = StyleSheet.create({
   },
   referenceText: {
     color: "#000",
-    fontSize: 16,
+    fontSize: 12,
     marginTop: 24,
     marginBottom: 20,
     textAlign: "center",
-    fontWeight: "600",
+    fontWeight: "0",
   },
   hintBoxContainer: {
     width: "100%",
     marginTop: 16,
     marginBottom: 8,
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#1e3d2f",
     borderWidth: 2,
-    borderColor: "#c99d5f",
+    borderColor: "#4a9d7a",
     overflow: "hidden",
     alignSelf: "stretch",
   },
@@ -791,28 +795,28 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: 14,
-    backgroundColor: "#fff",
+    backgroundColor: "#1e3d2f",
   },
   hintBoxTitle: {
-    color: "#000",
+    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
   hintBoxToggle: {
-    color: "#000",
+    color: "#fff",
     fontSize: 20,
     fontWeight: "bold",
   },
   hintBoxContent: {
     overflow: "hidden",
-    backgroundColor: "#fff",
+    backgroundColor: "#1e3d2f",
   },
   hintBoxContentInner: {
     position: "absolute",
     width: "100%",
   },
   hintBoxText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 15,
     padding: 14,
     lineHeight: 22,
@@ -832,8 +836,8 @@ const styles = StyleSheet.create({
   },
   input: {
     width: "100%",
-    backgroundColor: "#1e3d2f",
-    color: "#fff",
+    backgroundColor: "#e8e8e8",
+    color: "#000",
     fontSize: 18,
     padding: 18,
     borderRadius: 10,
@@ -842,12 +846,12 @@ const styles = StyleSheet.create({
     borderColor: "#4a9d7a",
   },
   submitButton: {
-    backgroundColor: "#000",
+    backgroundColor: "#1e3d2f",
     borderWidth: 2,
-    borderColor: "#ffeb3b",
+    borderColor: "#4a9d7a",
   },
   submitButtonText: {
-    color: "#ffeb3b",
+    color: "#fff",
   },
   skipButton: {
     position: "absolute",
@@ -855,21 +859,21 @@ const styles = StyleSheet.create({
     right: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: "#000",
+    backgroundColor: "#1e3d2f",
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: "#ffeb3b",
+    borderColor: "#4a9d7a",
     zIndex: 10,
   },
   skipButtonText: {
-    color: "#ffeb3b",
+    color: "#fff",
     fontSize: 14,
     fontWeight: "600",
   },
   hintButton: {
-    backgroundColor: "#000",
+    backgroundColor: "#1e3d2f",
     borderWidth: 2,
-    borderColor: "#ffeb3b",
+    borderColor: "#4a9d7a",
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 30,
@@ -879,7 +883,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   hintButtonText: {
-    color: "#ffeb3b",
+    color: "#fff",
     fontSize: 18,
     fontWeight: "700",
   },
@@ -906,15 +910,15 @@ const styles = StyleSheet.create({
     right: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: "#000",
+    backgroundColor: "#1e3d2f",
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: "#000",
+    borderColor: "#4a9d7a",
     zIndex: 2000,
     elevation: 20,
   },
   conversationSkipButtonText: {
-    color: "#ffeb3b",
+    color: "#fff",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -1018,7 +1022,7 @@ const styles = StyleSheet.create({
   },
   successContainer: {
     flex: 1,
-    backgroundColor: "#0b1d2a",
+    backgroundColor: "#rgba(255, 235, 59, 0.8)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -1161,15 +1165,9 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
   },
-  videoContainer: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#000",
-  },
   messageContainer: {
     flex: 1,
-    backgroundColor: "#0b1d2a",
+    backgroundColor: "#rgba(255, 235, 59, 0.8)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

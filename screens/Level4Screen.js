@@ -1,5 +1,6 @@
 import CutscenePlayer from "@/components/CutscenePlayer";
 import PrimaryButton from "@/components/PrimaryButton";
+import TypewriterText from "@/components/TypewriterText";
 import { useGame } from "@/context/GameContext";
 import { Audio } from "expo-av";
 import { useRouter } from "expo-router";
@@ -7,11 +8,64 @@ import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+
+// Conversation dialogue before the game starts
+const INTRO_DIALOGUE = [
+  {
+    character: "chirag",
+    text: "Why did I get a harmonica?",
+  },
+  {
+    character: "luffy",
+    text: "Hehehe! Because this round's about music!",
+  },
+  {
+    character: "chirag",
+    text: "Music…?",
+  },
+  {
+    character: "luffy",
+    text: "Yeah! Rhythm and timing!",
+  },
+  {
+    character: "chirag",
+    text: "Timing?",
+  },
+  {
+    character: "luffy",
+    text: "Yeah! In a moment, tiles will start falling down the screen.",
+  },
+  {
+    character: "chirag",
+    text: "Falling tiles…?",
+  },
+  {
+    character: "luffy",
+    text: "As soon as a dark tile starts falling, tap it!",
+  },
+  {
+    character: "chirag",
+    text: "So I don't wait till the bottom.",
+  },
+  {
+    character: "luffy",
+    text: "Nope! Hit it while it's moving! Keep tapping them in order as they fall.",
+  },
+  {
+    character: "chirag",
+    text: "Sounds like I'll need fast reactions.",
+  },
+  {
+    character: "luffy",
+    text: "Yeah!! Eyes sharp, hands quick! Stay in rhythm and keep going till the end!",
+  },
+];
 
 // Mini Game: Pineapple Tiles
 const LANES = 4;
@@ -36,7 +90,9 @@ export default function Level4Screen() {
     increasePower,
     unlockLevel,
     completeLevel,
-    fadeOutHomeMusic,
+     pauseHomeMusic,
+    //lowerHomeMusic,
+    resumeHomeMusic,
     setLastChiragLevel,
     isLevelCompleted,
   } = useGame();
@@ -51,6 +107,10 @@ export default function Level4Screen() {
   const [buggyComment, setBuggyComment] = useState("");
   const [oceanGlow, setOceanGlow] = useState(false);
   const [lanesWidth, setLanesWidth] = useState(SCREEN_WIDTH - 40);
+  const [showVideo, setShowVideo] = useState(false);
+  const [showConversation, setShowConversation] = useState(true);
+  const [dialogueIndex, setDialogueIndex] = useState(0);
+  const [canAdvance, setCanAdvance] = useState(false);
 
   const noteSoundRef = useRef(null);
   const noteDurationRef = useRef(0);
@@ -68,7 +128,7 @@ export default function Level4Screen() {
 
   // Fade out home music and start simple background track
   useEffect(() => {
-    fadeOutHomeMusic();
+     
 
     let isMounted = true;
     (async () => {
@@ -106,11 +166,19 @@ export default function Level4Screen() {
         clearInterval(spawnIntervalRef.current);
       }
     };
-  }, [fadeOutHomeMusic]);
+  }, [pauseHomeMusic]);
 
   // Start spawning tiles when unlocked and game hasn't ended
   useEffect(() => {
-    if (!isUnlocked || gameOver || showCompletionVideo || showReward) return;
+    if (
+      !isUnlocked ||
+      gameOver ||
+      showCompletionVideo ||
+      showReward ||
+      showConversation ||
+      showVideo
+    )
+      return;
 
     // Reset tile count when starting
     tilesSpawnedRef.current = 0;
@@ -172,7 +240,7 @@ export default function Level4Screen() {
         setMisses((prev) => {
           const next = prev + (newTile.hit ? 0 : 1);
           if (!newTile.hit && next <= MAX_MISSES) {
-            setBuggyComment("“Heh! Even pirates miss a beat!”");
+            setBuggyComment("Heh! Even pirates miss a beat!");
             setTimeout(() => setBuggyComment(""), 2000);
           }
           return next;
@@ -196,7 +264,14 @@ export default function Level4Screen() {
         clearTimeout(timeoutId);
       }
     };
-  }, [isUnlocked, gameOver, showCompletionVideo, showReward]);
+  }, [
+    isUnlocked,
+    gameOver,
+    showCompletionVideo,
+    showReward,
+    showConversation,
+    showVideo,
+  ]);
 
   const playNoteSound = async () => {
     if (!noteSoundRef.current) return;
@@ -295,6 +370,8 @@ export default function Level4Screen() {
   };
 
   const handleHoodieVideoComplete = () => {
+    resumeHomeMusic();
+
     router.push("/map");
   };
 
@@ -302,6 +379,125 @@ export default function Level4Screen() {
     setShowCompletionVideo(false);
     setShowReward(true);
   };
+
+  const handleDialogueNext = () => {
+    if (!canAdvance) return;
+
+    setCanAdvance(false);
+    if (dialogueIndex < INTRO_DIALOGUE.length - 1) {
+      setDialogueIndex(dialogueIndex + 1);
+    } else {
+      // Conversation complete, show video
+      pauseHomeMusic();
+      setShowConversation(false);
+    }
+  };
+
+  const handleDialogueComplete = () => {
+    setCanAdvance(true);
+  };
+
+  if (showConversation) {
+    const currentDialogue = INTRO_DIALOGUE[dialogueIndex];
+    if (!currentDialogue) {
+      setShowConversation(false);
+      return null;
+    }
+
+    const isChiragSpeaking = currentDialogue.character === "chirag";
+
+    const handleConversationSkip = () => {
+      pauseHomeMusic();
+      setShowConversation(false);
+    };
+
+    return (
+      <View style={styles.conversationContainer}>
+        {/* Skip button */}
+        <TouchableOpacity
+          style={styles.conversationSkipButton}
+          onPress={handleConversationSkip}
+        >
+          <Text style={styles.conversationSkipButtonText}>Skip</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.conversationTouchable}
+          onPress={handleDialogueNext}
+          disabled={!canAdvance}
+        >
+          {/* Manga-style background */}
+          <View style={styles.mangaBackground}>
+            {/* Characters facing each other */}
+            <View style={styles.charactersContainer}>
+              {/* Chirag on the left */}
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require("@/assets/images/Characters/chirag.png")}
+                  style={[
+                    styles.conversationCharacter,
+                    {
+                      opacity: isChiragSpeaking ? 1 : 0.4,
+                      transform: [
+                        { scaleX: -1 },
+                        { scale: isChiragSpeaking ? 1.1 : 1 },
+                      ],
+                    },
+                  ]}
+                />
+              </View>
+
+              {/* Luffy on the right */}
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require("@/assets/images/Characters/Luffy.png")}
+                  style={[
+                    styles.conversationCharacter,
+                    {
+                      opacity: !isChiragSpeaking ? 1 : 0.4,
+                      transform: [{ scale: !isChiragSpeaking ? 1.1 : 1 }],
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* Speech bubble for Chirag (left side, above) */}
+            {isChiragSpeaking && (
+              <View style={styles.speechBubbleLeft}>
+                <View style={styles.speechBubbleContent}>
+                  <TypewriterText
+                    text={currentDialogue.text}
+                    speed={30}
+                    onComplete={handleDialogueComplete}
+                  />
+                </View>
+                <View style={styles.speechBubbleTailLeft} />
+              </View>
+            )}
+
+            {/* Speech bubble for Sanji (right side, below) */}
+            {!isChiragSpeaking && (
+              <View style={styles.speechBubbleRight}>
+                <View style={styles.speechBubbleTailRight} />
+                <View style={styles.speechBubbleContent}>
+                  <TypewriterText
+                    text={currentDialogue.text}
+                    speed={30}
+                    onComplete={handleDialogueComplete}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Tap to continue hint */}
+            {canAdvance && <Text style={styles.tapHint}>Tap to continue</Text>}
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (showHoodieVideo) {
     return (
@@ -451,7 +647,7 @@ export default function Level4Screen() {
 
       {oceanGlow && (
         <View style={styles.sanjiTextContainer}>
-          <Text style={styles.sanjiText}>"Music isn’t about perfection."</Text>
+          <Text style={styles.sanjiText}>"Music isn't about perfection."</Text>
         </View>
       )}
     </View>
@@ -479,7 +675,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   levelTitle: {
-    color: "#fff",
+    color: "#000",
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
@@ -492,7 +688,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   subtitle: {
-    color: "#ccc",
+    color: "#000",
     fontSize: 16,
     textAlign: "center",
     marginBottom: 4,
@@ -540,9 +736,9 @@ const styles = StyleSheet.create({
     width: 60,
     height: 80,
     borderRadius: 14,
-    backgroundColor: "rgba(74, 157, 154, 0.9)",
+    backgroundColor: "rgba(81, 157, 74, 0.9)",
     borderWidth: 2,
-    borderColor: "#6bc9c9",
+    borderColor: "#4a7a6a",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -587,7 +783,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(74, 157, 154, 0.35)",
+    backgroundColor: "rgba(82, 157, 74, 0.35)",
   },
   buggyBubble: {
     position: "absolute",
@@ -620,6 +816,133 @@ const styles = StyleSheet.create({
   },
   titleTouchable: {
     alignItems: "center",
+  },
+  conversationContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    position: "relative",
+  },
+  conversationTouchable: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  conversationSkipButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: "#1e3d2f",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#4a9d7a",
+    zIndex: 2000,
+    elevation: 20,
+  },
+  conversationSkipButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  mangaBackground: {
+    flex: 1,
+    backgroundColor: "#ffeb3b",
+    position: "relative",
+    width: "100%",
+    overflow: "hidden",
+  },
+  charactersContainer: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-around",
+    alignItems: "center",
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 120,
+    paddingBottom: 200,
+  },
+  characterWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    width: "50%",
+  },
+  conversationCharacter: {
+    width: 280,
+    height: 400,
+    resizeMode: "contain",
+    maxWidth: "100%",
+    maxHeight: 400,
+  },
+  speechBubbleLeft: {
+    position: "absolute",
+    top: 100,
+    left: "10%",
+    width: "40%",
+    zIndex: 1000,
+    elevation: 10,
+    alignItems: "flex-start",
+  },
+  speechBubbleRight: {
+    position: "absolute",
+    bottom: 160,
+    right: "10%",
+    width: "40%",
+    zIndex: 1000,
+    elevation: 10,
+    alignItems: "flex-end",
+  },
+  speechBubbleContent: {
+    backgroundColor: "#ffffff",
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: "#000000",
+    shadowColor: "#000",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 8,
+    minHeight: 60,
+    justifyContent: "center",
+  },
+  speechBubbleTailLeft: {
+    width: 20,
+    height: 20,
+    backgroundColor: "#ffffff",
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderColor: "#000000",
+    transform: [{ rotate: "45deg" }],
+    marginTop: -10,
+    marginLeft: 20,
+    alignSelf: "flex-start",
+  },
+  speechBubbleTailRight: {
+    width: 20,
+    height: 20,
+    backgroundColor: "#ffffff",
+    borderLeftWidth: 3,
+    borderTopWidth: 3,
+    borderColor: "#000000",
+    transform: [{ rotate: "45deg" }],
+    marginBottom: -10,
+    marginRight: 20,
+    alignSelf: "flex-end",
+  },
+  tapHint: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+    color: "#666",
+    fontSize: 14,
+    fontStyle: "italic",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   rewardContainer: {
     flex: 1,

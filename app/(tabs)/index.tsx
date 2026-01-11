@@ -41,7 +41,7 @@ export default function HomeScreen() {
         // Only create new sound if one doesn't exist
         if (!homeScreenSound) {
           const { sound } = await Audio.Sound.createAsync(
-            require("@/assets/audio/OnePieceThemeBeginTrim.mp3"),
+            require("@/assets/audio/OnePieceTheme.mp3"),
             { shouldPlay: true, isLooping: true }
           );
           setHomeScreenSound(sound); // Store in context for global access
@@ -109,7 +109,7 @@ export default function HomeScreen() {
     // Play gamified button click sound effect
     try {
       const { sound } = await Audio.Sound.createAsync(
-        require("@/assets/audio/OnePieceThemeBeginTrim.mp3"),
+        require("@/assets/audio/OnePieceTheme.mp3"),
         { shouldPlay: true, volume: 0.6, isLooping: false }
       );
 
@@ -127,7 +127,7 @@ export default function HomeScreen() {
       console.log("Error playing button sound:", error);
     }
 
-    // Navigate directly to map (removed video) after sound plays
+    // Pause home music when navigating to map
     setTimeout(() => {
       pauseHomeMusic();
       setHasPlayedAudio(true);
@@ -173,7 +173,7 @@ export default function HomeScreen() {
           colors={["transparent", "rgba(0, 0, 0, 0.15)", "rgba(0, 0, 0, 0.25)"]}
           locations={[0, 0.4, 1]}
           style={styles.foregroundBoost}
-              />
+        />
       </View>
       <Animated.View
         style={[
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     shadowOffset: {
       width: 0,
       height: 8,
-  },
+    },
     shadowOpacity: 0.4,
     shadowRadius: 20,
     elevation: 10,

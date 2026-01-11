@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from "react";
 
 const GameContext = createContext();
 
@@ -51,7 +51,7 @@ export function GameProvider({ children }) {
       try {
         await homeScreenSound.pauseAsync();
       } catch (error) {
-        console.log('Error pausing home music:', error);
+        console.log("Error pausing home music:", error);
       }
     }
   };
@@ -59,9 +59,19 @@ export function GameProvider({ children }) {
   const resumeHomeMusic = async () => {
     if (homeScreenSound) {
       try {
+        await homeScreenSound.setVolumeAsync(1.0); // Restore volume to 100%
         await homeScreenSound.playAsync();
       } catch (error) {
-        console.log('Error resuming home music:', error);
+        console.log("Error resuming home music:", error);
+      }
+    }
+  };
+  const lowerHomeMusic = async () => {
+    if (homeScreenSound) {
+      try {
+        await homeScreenSound.setVolumeAsync(0.2); // Reduce volume to 20%
+      } catch (error) {
+        console.log("Error lowering music volume:", error);
       }
     }
   };
@@ -84,7 +94,7 @@ export function GameProvider({ children }) {
         await homeScreenSound.unloadAsync();
         setHomeScreenSound(null);
       } catch (error) {
-        console.log('Error fading home music:', error);
+        console.log("Error fading home music:", error);
         // Fallback: just unload
         try {
           if (homeScreenSound) {
@@ -111,6 +121,7 @@ export function GameProvider({ children }) {
         setHomeScreenSound,
         pauseHomeMusic,
         resumeHomeMusic,
+        lowerHomeMusic,
         fadeOutHomeMusic,
         unlockLevel,
         completeLevel,
@@ -129,8 +140,7 @@ export function GameProvider({ children }) {
 export function useGame() {
   const context = useContext(GameContext);
   if (!context) {
-    throw new Error('useGame must be used within a GameProvider');
+    throw new Error("useGame must be used within a GameProvider");
   }
   return context;
 }
-

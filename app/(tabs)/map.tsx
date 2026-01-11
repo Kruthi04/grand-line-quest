@@ -1,7 +1,8 @@
 import { useGame } from "@/context/GameContext";
+import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
   StyleSheet,
@@ -55,15 +56,15 @@ const LEVELS: Level[] = [
   {
     id: 4,
     name: "Breath & Control",
-    character: "Sanji",
-    image: require("@/assets/images/Characters/Sanji.png"),
+    character: "Luffy",
+    image: require("@/assets/images/Characters/Luffy.png"),
     position: { x: 0.3, y: 0.65 },
   },
   {
     id: 5,
     name: "Captain's Oath",
-    character: "Luffy",
-    image: require("@/assets/images/Characters/Luffy.png"),
+    character: "Usopp",
+    image: require("@/assets/images/Characters/UsoppChar.png"),
     position: { x: 0.7, y: 0.75 },
   },
 ];
@@ -348,17 +349,26 @@ export default function MapScreen() {
   const unlockedLevelsFromContext = (gameContext as any).unlockedLevels || [1];
   const lastChiragLevel = (gameContext as any).lastChiragLevel || 1;
 
+  const { resumeHomeMusic } = useGame();
+
   // Show hint only when no levels are completed (first visit)
   const [showHint, setShowHint] = useState(completedLevels.length === 0);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (resumeHomeMusic) {
+        resumeHomeMusic();
+      }
+    }, [resumeHomeMusic])
+  );
   // Resume home music if it exists when on map screen
-  useEffect(() => {
-    const homeScreenSound = (gameContext as any).homeScreenSound;
-    const resumeHomeMusic = (gameContext as any).resumeHomeMusic;
-    if (homeScreenSound && resumeHomeMusic) {
-      resumeHomeMusic();
-    }
-  }, [gameContext]);
+  // useEffect(() => {
+  //   const homeScreenSound = (gameContext as any).homeScreenSound;
+  //   const resumeHomeMusic = (gameContext as any).resumeHomeMusic;
+  //   if (homeScreenSound && resumeHomeMusic) {
+  //     resumeHomeMusic();
+  //   }
+  // }, [gameContext]);
 
   // Update hint visibility when levels are completed
   useEffect(() => {

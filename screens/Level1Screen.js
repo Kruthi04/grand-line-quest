@@ -78,15 +78,16 @@ export default function Level1Screen() {
     increasePower,
     unlockLevel,
     completeLevel,
-    fadeOutHomeMusic,
+    resumeHomeMusic,
+    // fadeOutHomeMusic,
     setLastChiragLevel,
   } = useGame();
   const [cards, setCards] = useState([]);
 
   // Fade out home music when level loads
-  useEffect(() => {
-    fadeOutHomeMusic();
-  }, [fadeOutHomeMusic]);
+  // useEffect(() => {
+  //   fadeOutHomeMusic();
+  // }, [fadeOutHomeMusic]);
   const [flippedCards, setFlippedCards] = useState([]);
   const [matchedPairs, setMatchedPairs] = useState([]);
   const [showCutscene, setShowCutscene] = useState(false);
@@ -209,6 +210,7 @@ export default function Level1Screen() {
     increasePower(1);
     unlockLevel(2);
     completeLevel(1);
+    resumeHomeMusic();
     router.push("/map");
   };
 
@@ -218,6 +220,7 @@ export default function Level1Screen() {
     increasePower(1);
     unlockLevel(2);
     completeLevel(1);
+    resumeHomeMusic();
     router.push("/map");
   };
 

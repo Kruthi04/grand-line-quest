@@ -99,15 +99,16 @@ export default function Level2Screen() {
     increasePower,
     unlockLevel,
     completeLevel,
-    fadeOutHomeMusic,
+    // fadeOutHomeMusic,
+    resumeHomeMusic,
     setLastChiragLevel,
   } = useGame();
   const [tiles, setTiles] = useState(INITIAL_TILES);
 
   // Fade out home music when level loads
-  useEffect(() => {
-    fadeOutHomeMusic();
-  }, [fadeOutHomeMusic]);
+  // useEffect(() => {
+  //   fadeOutHomeMusic();
+  // }, [fadeOutHomeMusic]);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showCutscene, setShowCutscene] = useState(false);
   const [showReward, setShowReward] = useState(false);
@@ -178,6 +179,7 @@ export default function Level2Screen() {
   };
 
   const handleCutsceneComplete = () => {
+    resumeHomeMusic();
     setShowCutscene(false);
     setShowReward(true);
   };
@@ -187,6 +189,7 @@ export default function Level2Screen() {
     setLastChiragLevel(2);
     increasePower(1);
     unlockLevel(3);
+    resumeHomeMusic();
     completeLevel(2);
     setShowReward(true);
   };
@@ -197,6 +200,7 @@ export default function Level2Screen() {
   };
 
   const handleMangaVideoComplete = () => {
+    resumeHomeMusic();
     router.push("/map");
   };
 
@@ -206,6 +210,7 @@ export default function Level2Screen() {
     increasePower(1);
     unlockLevel(3);
     completeLevel(2);
+    resumeHomeMusic();
     setShowReward(true);
   };
 

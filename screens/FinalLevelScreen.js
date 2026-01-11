@@ -1,26 +1,41 @@
-import { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Animated } from 'react-native';
-import { useRouter } from 'expo-router';
-import PrimaryButton from '@/components/PrimaryButton';
-import CutscenePlayer from '@/components/CutscenePlayer';
-import { useGame } from '@/context/GameContext';
+import CutscenePlayer from "@/components/CutscenePlayer";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useGame } from "@/context/GameContext";
+import { useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const OATH_STATEMENTS = [
-  'I commit to earning every power through discipline.',
-  'I will face challenges with courage and resolve.',
-  'I understand that true strength comes from within.',
-  'I accept the responsibility that comes with power.',
+  "I commit to earning every power through discipline.",
+  "I will face challenges with courage and resolve.",
+  "I understand that true strength comes from within.",
+  "I accept the responsibility that comes with power.",
 ];
 
 export default function FinalLevelScreen() {
   const router = useRouter();
-  const { power, getRequiredPower, completeLevel, fadeOutHomeMusic, pauseHomeMusic } = useGame();
+  const {
+    power,
+    getRequiredPower,
+    completeLevel,
+    resumeHomeMusic,
+    //fadeOutHomeMusic,
+    lowerHomeMusic,
+    pauseHomeMusic,
+  } = useGame();
   const [checkedStatements, setCheckedStatements] = useState([]);
   const [showOath, setShowOath] = useState(true);
   const [showCompletionPage, setShowCompletionPage] = useState(false);
   const [showBirthdayVideo, setShowBirthdayVideo] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
-  
+
   // Animation values for completion page
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(20)).current;
@@ -28,9 +43,9 @@ export default function FinalLevelScreen() {
   const animationRef = useRef(null);
 
   // Fade out home music when level loads
-  useEffect(() => {
-    fadeOutHomeMusic();
-  }, [fadeOutHomeMusic]);
+  // useEffect(() => {
+  //   fadeOutHomeMusic();
+  // }, [fadeOutHomeMusic]);
 
   useEffect(() => {
     const requiredPower = getRequiredPower(5);
@@ -44,7 +59,7 @@ export default function FinalLevelScreen() {
       if (animationRef.current) {
         animationRef.current.stop();
       }
-      
+
       fadeAnim.setValue(0);
       translateYAnim.setValue(20);
       scaleAnim.setValue(0.95);
@@ -93,7 +108,7 @@ export default function FinalLevelScreen() {
         scaleAnim.setValue(0.95);
       };
     }
-  }, [showCompletionPage, pauseHomeMusic, fadeAnim, translateYAnim, scaleAnim]);
+  }, [showCompletionPage, lowerHomeMusic, pauseHomeMusic, fadeAnim, translateYAnim, scaleAnim]);
 
   const toggleStatement = (index) => {
     if (checkedStatements.includes(index)) {
@@ -108,18 +123,20 @@ export default function FinalLevelScreen() {
       setShowOath(false);
       setShowCompletionPage(true);
     } else {
-      alert('Please accept all statements to continue.');
+      alert("Please accept all statements to continue.");
     }
   };
 
   const handleBirthdayVideoComplete = () => {
     completeLevel(5);
-    router.push('/map');
+    resumeHomeMusic();
+    router.push("/map");
   };
 
   const handleSkip = () => {
     completeLevel(5);
-    router.push('/map');
+    resumeHomeMusic();
+    router.push("/map");
   };
 
   if (showCompletionPage) {
@@ -130,16 +147,13 @@ export default function FinalLevelScreen() {
         <Text style={styles.starDecor2}>✦</Text>
         <Text style={styles.starDecor3}>✦</Text>
         <Text style={styles.starDecor4}>✦</Text>
-        
+
         <Animated.View
           style={[
             styles.completionCard,
             {
               opacity: fadeAnim,
-              transform: [
-                { translateY: translateYAnim },
-                { scale: scaleAnim },
-              ],
+              transform: [{ translateY: translateYAnim }, { scale: scaleAnim }],
             },
           ]}
         >
@@ -148,11 +162,11 @@ export default function FinalLevelScreen() {
           <View style={styles.cornerDecorRight} />
           <View style={styles.cornerDecorTopRight} />
           <View style={styles.cornerDecorBottomLeft} />
-          
+
           {/* Top decorative stars */}
           <Text style={styles.cardStar1}>✦</Text>
           <Text style={styles.cardStar2}>✦</Text>
-          
+
           <View style={styles.completionContent}>
             <Animated.Text
               style={[
@@ -165,7 +179,7 @@ export default function FinalLevelScreen() {
             >
               🏆
             </Animated.Text>
-            
+
             <Animated.Text
               style={[
                 styles.completionTitle,
@@ -178,9 +192,9 @@ export default function FinalLevelScreen() {
             >
               CONGRATULATIONS!
             </Animated.Text>
-            
+
             <View style={styles.dividerLine} />
-            
+
             <Animated.Text
               style={[
                 styles.completionMessage,
@@ -193,7 +207,7 @@ export default function FinalLevelScreen() {
             >
               You have completed the game!
             </Animated.Text>
-            
+
             <Animated.Text
               style={[
                 styles.completionSubmessage,
@@ -206,7 +220,7 @@ export default function FinalLevelScreen() {
             >
               You have reached the end of the Grand Line Quest.
             </Animated.Text>
-            
+
             <Animated.Text
               style={[
                 styles.completionThankYou,
@@ -229,7 +243,7 @@ export default function FinalLevelScreen() {
     return (
       <View style={styles.videoContainer}>
         <CutscenePlayer
-          videoSource={require('@/assets/videos/bday 3.mp4')}
+          videoSource={require("@/assets/videos/bday 3.mp4")}
           onComplete={handleBirthdayVideoComplete}
           resizeMode="cover"
         />
@@ -248,7 +262,7 @@ export default function FinalLevelScreen() {
         <Text style={styles.lockedText}>You have {power} power.</Text>
         <PrimaryButton
           title="Back to Map"
-          onPress={() => router.push('/map')}
+          onPress={() => router.push("/map")}
         />
       </View>
     );
@@ -301,49 +315,49 @@ export default function FinalLevelScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0b1d2a',
+    backgroundColor: "#ffeb3b",
   },
   contentContainer: {
     padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100%',
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "100%",
   },
   title: {
-    color: '#fff',
+    color: "#000",
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
-    color: '#ccc',
+    color: "#000",
     fontSize: 18,
     marginBottom: 40,
-    textAlign: 'center',
+    textAlign: "center",
   },
   lockedTitle: {
-    color: '#fff',
+    color: "#000",
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 20,
   },
   lockedText: {
-    color: '#ccc',
+    color: "#ccc",
     fontSize: 18,
     marginBottom: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
   oathContainer: {
-    width: '100%',
+    width: "100%",
     marginBottom: 40,
   },
   statementRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
     padding: 15,
-    backgroundColor: '#1e3d2f',
+    backgroundColor: "#1e3d2f",
     borderRadius: 10,
   },
   checkbox: {
@@ -351,22 +365,22 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: '#4a9d7a',
+    borderColor: "#4a9d7a",
     marginRight: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   checkboxChecked: {
-    backgroundColor: '#4a9d7a',
+    backgroundColor: "#4a9d7a",
   },
   checkmark: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   statementText: {
     flex: 1,
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
     lineHeight: 24,
   },
@@ -395,189 +409,188 @@ const styles = StyleSheet.create({
   },
   completionContainer: {
     flex: 1,
-    backgroundColor: '#0b1d2a',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#ffeb3b",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
-    position: 'relative',
-    overflow: 'hidden',
+    position: "relative",
+    overflow: "hidden",
   },
   starDecor1: {
-    position: 'absolute',
-    top: '15%',
-    left: '10%',
+    position: "absolute",
+    top: "15%",
+    left: "10%",
     fontSize: 40,
-    color: '#ffd700',
+    color: "#ffd700",
     opacity: 0.4,
   },
   starDecor2: {
-    position: 'absolute',
-    top: '20%',
-    right: '15%',
+    position: "absolute",
+    top: "20%",
+    right: "15%",
     fontSize: 35,
-    color: '#ffd700',
+    color: "#ffd700",
     opacity: 0.4,
   },
   starDecor3: {
-    position: 'absolute',
-    bottom: '20%',
-    left: '12%',
+    position: "absolute",
+    bottom: "20%",
+    left: "12%",
     fontSize: 38,
-    color: '#ffd700',
+    color: "#ffd700",
     opacity: 0.4,
   },
   starDecor4: {
-    position: 'absolute',
-    bottom: '15%',
-    right: '10%',
+    position: "absolute",
+    bottom: "15%",
+    right: "10%",
     fontSize: 42,
-    color: '#ffd700',
+    color: "#ffd700",
     opacity: 0.4,
   },
   completionCard: {
-    width: '85%',
+    width: "85%",
     maxWidth: 340,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
     borderRadius: 24,
     borderWidth: 3,
-    borderColor: '#ffd700',
-    shadowColor: '#ffd700',
+    borderColor: "#ffd700",
+    shadowColor: "#ffd700",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.8,
     shadowRadius: 20,
     elevation: 15,
-    position: 'relative',
-    overflow: 'hidden',
+    position: "relative",
+    overflow: "hidden",
   },
   cornerDecorLeft: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     left: -2,
     width: 40,
     height: 40,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#ffd700',
+    borderColor: "#ffd700",
     borderTopLeftRadius: 24,
     zIndex: 1,
   },
   cornerDecorRight: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     right: -2,
     width: 40,
     height: 40,
     borderBottomWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#ffd700',
+    borderColor: "#ffd700",
     borderBottomRightRadius: 24,
     zIndex: 1,
   },
   cornerDecorTopRight: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     right: -2,
     width: 40,
     height: 40,
     borderTopWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#ffd700',
+    borderColor: "#ffd700",
     borderTopRightRadius: 24,
     zIndex: 1,
   },
   cornerDecorBottomLeft: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     left: -2,
     width: 40,
     height: 40,
     borderBottomWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#ffd700',
+    borderColor: "#ffd700",
     borderBottomLeftRadius: 24,
     zIndex: 1,
   },
   cardStar1: {
-    position: 'absolute',
+    position: "absolute",
     top: 15,
     left: 20,
     fontSize: 22,
-    color: '#ffd700',
+    color: "#ffd700",
     opacity: 0.7,
     zIndex: 1,
   },
   cardStar2: {
-    position: 'absolute',
+    position: "absolute",
     top: 15,
     right: 20,
     fontSize: 22,
-    color: '#ffd700',
+    color: "#ffd700",
     opacity: 0.7,
     zIndex: 1,
   },
   completionContent: {
     padding: 28,
-    alignItems: 'center',
+    alignItems: "center",
     zIndex: 2,
   },
   completionBadge: {
     fontSize: 60,
     marginBottom: 15,
-    textShadowColor: 'rgba(255, 215, 0, 0.8)',
+    textShadowColor: "rgba(255, 215, 0, 0.8)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 15,
   },
   completionTitle: {
-    color: '#ffd700',
+    color: "#ffd700",
     fontSize: 20,
-    fontWeight: '900',
+    fontWeight: "900",
     letterSpacing: 1.5,
     marginBottom: 15,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textAlign: "center",
+    textTransform: "uppercase",
+    textShadowColor: "rgba(0, 0, 0, 0.9)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
     minWidth: 250,
   },
   dividerLine: {
-    width: '70%',
+    width: "70%",
     height: 2,
-    backgroundColor: '#ffd700',
+    backgroundColor: "#ffd700",
     marginBottom: 18,
     opacity: 0.6,
     borderRadius: 2,
   },
   completionMessage: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 14,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 26,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
   completionSubmessage: {
-    color: '#e0e0e0',
+    color: "#e0e0e0",
     fontSize: 15,
     marginBottom: 10,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
     paddingHorizontal: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   completionThankYou: {
-    color: '#ffd700',
+    color: "#ffd700",
     fontSize: 17,
     marginTop: 8,
-    textAlign: 'center',
-    fontWeight: '700',
-    fontStyle: 'italic',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textAlign: "center",
+    fontWeight: "700",
+    fontStyle: "italic",
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
 });
-
