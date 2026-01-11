@@ -15,8 +15,11 @@ import {
 
 // Mini Game: Pineapple Tiles
 const LANES = 4;
-const TILE_FALL_DURATION = 6000; // ms for a tile to fall from top to bottom
-const TILE_SPAWN_INTERVAL = 1200; // ms between spawns
+const INITIAL_FALL_DURATION = 5500; // ms for a tile to fall from top to bottom (start slow)
+const FINAL_FALL_DURATION = 2800; // ms for final speed
+const INITIAL_SPAWN_INTERVAL = 1500; // ms between spawns (start slow)
+const FINAL_SPAWN_INTERVAL = 700; // ms for final speed
+const SPEED_RAMP_UP_TILES = 3; // Number of tiles before reaching final speed
 const MAX_MISSES = 3; // Allow a few misses
 const TARGET_HITS = 12; // Song length (visual only)
 const NOTE_SEGMENT_MS = 600; // length of each snippet from the Baka song
@@ -55,6 +58,7 @@ export default function Level4Screen() {
   const audioPlayedMsRef = useRef(0);
   const idCounter = useRef(0);
   const spawnIntervalRef = useRef(null);
+  const tilesSpawnedRef = useRef(0);
 
   useEffect(() => {
     const requiredPower = getRequiredPower(4);
@@ -108,10 +112,45 @@ export default function Level4Screen() {
   useEffect(() => {
     if (!isUnlocked || gameOver || showCompletionVideo || showReward) return;
 
+    // Reset tile count when starting
+    tilesSpawnedRef.current = 0;
+
+    const getDynamicSpeed = () => {
+      const tilesCount = tilesSpawnedRef.current;
+      if (tilesCount < SPEED_RAMP_UP_TILES) {
+        // Gradual speed increase: start slow, reach final speed after SPEED_RAMP_UP_TILES
+        const progress = tilesCount / SPEED_RAMP_UP_TILES;
+        const fallDuration =
+          INITIAL_FALL_DURATION -
+          (INITIAL_FALL_DURATION - FINAL_FALL_DURATION) * progress;
+        const spawnInterval =
+          INITIAL_SPAWN_INTERVAL -
+          (INITIAL_SPAWN_INTERVAL - FINAL_SPAWN_INTERVAL) * progress;
+        return { fallDuration, spawnInterval };
+      } else {
+        // After ramp-up period, use final speed
+        return {
+          fallDuration: FINAL_FALL_DURATION,
+          spawnInterval: FINAL_SPAWN_INTERVAL,
+        };
+      }
+    };
+
+    let timeoutId = null;
+    let isActive = true;
+
     const spawnTile = () => {
+      if (!isActive) return;
+
       const lane = Math.floor(Math.random() * LANES);
       const id = idCounter.current++;
       const translateY = new Animated.Value(-80);
+
+      // Get speed for THIS tile (before incrementing)
+      const { fallDuration } = getDynamicSpeed();
+
+      // Increment counter after getting speed for this tile
+      tilesSpawnedRef.current++;
 
       const newTile = {
         id,
@@ -124,7 +163,7 @@ export default function Level4Screen() {
 
       Animated.timing(translateY, {
         toValue: SCREEN_HEIGHT,
-        duration: TILE_FALL_DURATION,
+        duration: fallDuration,
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (!finished) return;
@@ -139,62 +178,87 @@ export default function Level4Screen() {
           return next;
         });
       });
+
+      // Schedule next spawn with dynamic interval (after incrementing, so it uses next tile's speed)
+      if (isActive) {
+        const { spawnInterval: nextInterval } = getDynamicSpeed();
+        timeoutId = setTimeout(spawnTile, nextInterval);
+      }
     };
 
-    spawnIntervalRef.current = setInterval(spawnTile, TILE_SPAWN_INTERVAL);
+    // Start first tile spawn
+    const { spawnInterval: initialInterval } = getDynamicSpeed();
+    timeoutId = setTimeout(spawnTile, initialInterval);
+
     return () => {
-      if (spawnIntervalRef.current) {
-        clearInterval(spawnIntervalRef.current);
+      isActive = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, [isUnlocked, gameOver, showCompletionVideo, showReward]);
 
   const playNoteSound = async () => {
-    if (noteSoundRef.current) {
+    if (!noteSoundRef.current) return;
+
+    try {
+      // Stop any currently playing sound first
       try {
-        const duration = noteDurationRef.current;
-        let startMs = 0;
-
-        if (duration > 0) {
-          const maxStart = Math.max(duration - NOTE_SEGMENT_MS, 0);
-          startMs = noteSegmentIndexRef.current * NOTE_SEGMENT_MS;
-          if (startMs > maxStart) {
-            // Wrap back to the beginning once we reach the end
-            startMs = 0;
-            noteSegmentIndexRef.current = 0;
-          }
+        const status = await noteSoundRef.current.getStatusAsync();
+        if (status.isLoaded && status.isPlaying) {
+          await noteSoundRef.current.stopAsync();
         }
+      } catch {
+        // ignore stop errors
+      }
 
-        await noteSoundRef.current.setPositionAsync(startMs);
-        await noteSoundRef.current.playAsync();
-        setTimeout(async () => {
-          try {
-            if (noteSoundRef.current) {
+      const duration = noteDurationRef.current;
+      let startMs = 0;
+
+      if (duration > 0) {
+        const maxStart = Math.max(duration - NOTE_SEGMENT_MS, 0);
+        startMs = noteSegmentIndexRef.current * NOTE_SEGMENT_MS;
+        if (startMs > maxStart) {
+          // Wrap back to the beginning once we reach the end
+          startMs = 0;
+          noteSegmentIndexRef.current = 0;
+        }
+      }
+
+      await noteSoundRef.current.setPositionAsync(startMs);
+      await noteSoundRef.current.playAsync();
+
+      // Stop after segment duration
+      setTimeout(async () => {
+        try {
+          if (noteSoundRef.current) {
+            const status = await noteSoundRef.current.getStatusAsync();
+            if (status.isLoaded && status.isPlaying) {
               await noteSoundRef.current.stopAsync();
             }
-          } catch {
-            // ignore stop errors
           }
-        }, NOTE_SEGMENT_MS); // play one segment snippet
-
-        // Advance to next segment for the next tile tap
-        noteSegmentIndexRef.current += 1;
-
-        // Track total audio played; when we reach target, finish the level
-        audioPlayedMsRef.current += NOTE_SEGMENT_MS;
-        if (!gameOver && audioPlayedMsRef.current >= AUDIO_TARGET_MS) {
-          setOceanGlow(true);
-          setGameOver(true);
-          if (spawnIntervalRef.current) {
-            clearInterval(spawnIntervalRef.current);
-          }
-          setTimeout(() => {
-            finishLevel();
-          }, 2500);
+        } catch {
+          // ignore stop errors
         }
-      } catch (e) {
-        console.log("Error playing note sound:", e);
+      }, NOTE_SEGMENT_MS);
+
+      // Advance to next segment for the next tile tap
+      noteSegmentIndexRef.current += 1;
+
+      // Track total audio played; when we reach target, finish the level
+      audioPlayedMsRef.current += NOTE_SEGMENT_MS;
+      if (!gameOver && audioPlayedMsRef.current >= AUDIO_TARGET_MS) {
+        setOceanGlow(true);
+        setGameOver(true);
+        if (spawnIntervalRef.current) {
+          clearInterval(spawnIntervalRef.current);
+        }
+        setTimeout(() => {
+          finishLevel();
+        }, 2500);
       }
+    } catch (e) {
+      console.log("Error playing note sound:", e);
     }
   };
 
@@ -245,7 +309,7 @@ export default function Level4Screen() {
         <CutscenePlayer
           videoSource={require("@/assets/videos/hoodie final.mp4")}
           onComplete={handleHoodieVideoComplete}
-          resizeMode="cover"
+          resizeMode="contain"
         />
       </View>
     );
@@ -270,7 +334,12 @@ export default function Level4Screen() {
             <Text style={styles.rewardMessage}>
               Collect your reward for completing the level.
             </Text>
-            <PrimaryButton title="Continue" onPress={handleRewardContinue} />
+            <PrimaryButton
+              title="Continue"
+              onPress={handleRewardContinue}
+              style={styles.continueButton}
+              textStyle={styles.continueButtonText}
+            />
           </View>
         </View>
       </View>
@@ -283,7 +352,7 @@ export default function Level4Screen() {
         <CutscenePlayer
           videoSource={require("@/assets/videos/ChiragLuffySongVideo.mp4")}
           onComplete={handleCompletionVideoComplete}
-          resizeMode="cover"
+          resizeMode="contain"
         />
       </View>
     );
@@ -392,15 +461,22 @@ export default function Level4Screen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0b1d2a",
+    backgroundColor: "#ffeb3b",
     paddingTop: 60,
     paddingHorizontal: 20,
   },
   videoContainer: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: "100%",
     height: "100%",
     backgroundColor: "#000",
+    zIndex: 1000,
+    justifyContent: "center",
+    alignItems: "center",
   },
   levelTitle: {
     color: "#fff",
@@ -547,7 +623,7 @@ const styles = StyleSheet.create({
   },
   rewardContainer: {
     flex: 1,
-    backgroundColor: "#0b1d2a",
+    backgroundColor: "#ffeb3b",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -555,12 +631,12 @@ const styles = StyleSheet.create({
   rewardCard: {
     width: "90%",
     maxWidth: 380,
-    backgroundColor: "#1a1a2e",
+    backgroundColor: "#1e3d2f",
     borderRadius: 24,
     alignItems: "center",
     borderWidth: 3,
-    borderColor: "#ffd700",
-    shadowColor: "#ffd700",
+    borderColor: "#4a9d7a",
+    shadowColor: "#4a9d7a",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 16,
@@ -576,7 +652,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderColor: "#ffd700",
+    borderColor: "#4a9d7a",
     borderTopLeftRadius: 24,
   },
   cornerDecorRight: {
@@ -587,7 +663,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderBottomWidth: 4,
     borderRightWidth: 4,
-    borderColor: "#ffd700",
+    borderColor: "#4a9d7a",
     borderBottomRightRadius: 24,
   },
   starDecor1: {
@@ -595,16 +671,16 @@ const styles = StyleSheet.create({
     top: 15,
     left: 20,
     fontSize: 24,
-    color: "#ffd700",
-    opacity: 0.6,
+    color: "#ffeb3b",
+    opacity: 0.8,
   },
   starDecor2: {
     position: "absolute",
     top: 15,
     right: 20,
     fontSize: 24,
-    color: "#ffd700",
-    opacity: 0.6,
+    color: "#ffeb3b",
+    opacity: 0.8,
   },
   rewardContent: {
     width: "100%",
@@ -614,14 +690,14 @@ const styles = StyleSheet.create({
   },
   rewardBadge: {
     fontSize: 64,
-    color: "#ffd700",
+    color: "#ffeb3b",
     marginBottom: 12,
-    textShadowColor: "rgba(255, 215, 0, 0.8)",
+    textShadowColor: "rgba(255, 235, 59, 0.8)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
   rewardTitle: {
-    color: "#ffd700",
+    color: "#fff",
     fontSize: 24,
     fontWeight: "900",
     letterSpacing: 2,
@@ -635,16 +711,25 @@ const styles = StyleSheet.create({
   dividerLine: {
     width: "80%",
     height: 2,
-    backgroundColor: "#ffd700",
+    backgroundColor: "#4a9d7a",
     marginBottom: 20,
     opacity: 0.5,
   },
   rewardMessage: {
-    color: "#e0e0e0",
+    color: "#fff",
     fontSize: 16,
     textAlign: "center",
     marginBottom: 28,
     lineHeight: 24,
     fontWeight: "500",
+  },
+  continueButton: {
+    backgroundColor: "rgba(30, 61, 47, 0.8)",
+    borderWidth: 1,
+    borderColor: "rgba(74, 157, 154, 0.5)",
+  },
+  continueButtonText: {
+    color: "#fff",
+    fontWeight: "700",
   },
 });

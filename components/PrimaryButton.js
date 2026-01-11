@@ -5,6 +5,7 @@ export default function PrimaryButton({
   onPress,
   disabled = false,
   style,
+  textStyle,
 }) {
   return (
     <TouchableOpacity
@@ -13,7 +14,7 @@ export default function PrimaryButton({
       disabled={disabled}
       activeOpacity={0.7}
     >
-      <Text style={styles.buttonText}>{title}</Text>
+      <Text style={[styles.buttonText, textStyle]}>{title}</Text>
     </TouchableOpacity>
   );
 }

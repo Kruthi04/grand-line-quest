@@ -1,11 +1,13 @@
 import CutscenePlayer from "@/components/CutscenePlayer";
 import PrimaryButton from "@/components/PrimaryButton";
+import TypewriterText from "@/components/TypewriterText";
 import { useGame } from "@/context/GameContext";
 import { Audio } from "expo-av";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +15,62 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+// Conversation dialogue before the game starts
+const INTRO_DIALOGUE = [
+  {
+    character: "sanji",
+    text: "Alright, Chirag. This one's different.",
+  },
+  {
+    character: "chirag",
+    text: "Different how?",
+  },
+  {
+    character: "sanji",
+    text: "You don't know the sentence. You don't know who says it either.",
+  },
+  {
+    character: "chirag",
+    text: "Then how am I supposed to find it?",
+  },
+  {
+    character: "sanji",
+    text: "By paying attention. You've got the manga in your hands, and a few hints to guide you.",
+  },
+  {
+    character: "chirag",
+    text: "So I read… and narrow it down.",
+  },
+  {
+    character: "sanji",
+    text: "Exactly. Don't scan every word blindly. Use the hints. Let them point you in the right direction.",
+  },
+  {
+    character: "chirag",
+    text: "What if I miss it?",
+  },
+  {
+    character: "sanji",
+    text: "Then you slow down and read again. Rushing is how you overlook the obvious.",
+  },
+  {
+    character: "chirag",
+    text: "So this isn't about speed.",
+  },
+  {
+    character: "sanji",
+    text: "No. It's about focus. A good fighter knows when to observe instead of strike.",
+  },
+  {
+    character: "chirag",
+    text: "Alright. I'll trust the hints.",
+  },
+  {
+    character: "sanji",
+    text: "That's the way. Read carefully. The sentence will stand out when you're ready.",
+  },
+];
 
 // Individual hint boxes component (no animation to avoid native driver issues)
 function HintBox({ hint, isExpanded, onToggle }) {
@@ -59,6 +117,9 @@ export default function Level3Screen() {
   const [hintLevel, setHintLevel] = useState(0); // 0 = poem only, 1..3 = progressively more hints
   const [expandedHints, setExpandedHints] = useState({}); // Track which hint boxes are expanded
   const [showVideo, setShowVideo] = useState(false);
+  const [showConversation, setShowConversation] = useState(true);
+  const [dialogueIndex, setDialogueIndex] = useState(0);
+  const [canAdvance, setCanAdvance] = useState(false);
 
   const pageSoundRef = useRef(null);
   const successOpacity = useRef(new Animated.Value(0)).current;
@@ -77,11 +138,7 @@ export default function Level3Screen() {
     const unlocked = power >= requiredPower;
     const completed = isLevelCompleted(3);
     setIsUnlocked(unlocked);
-    // Show video only the first time level is unlocked and not yet completed
-    if (unlocked && !completed && !hasPlayedVideoRef.current) {
-      setShowVideo(true);
-      hasPlayedVideoRef.current = true;
-    }
+    // Video is now shown after conversation completes, not here
   }, [power, getRequiredPower, isLevelCompleted]);
 
   // Load soft page-turn sound for success moment
@@ -219,6 +276,125 @@ export default function Level3Screen() {
     setShowVideo(false);
   };
 
+  const handleDialogueNext = () => {
+    if (!canAdvance) return;
+
+    setCanAdvance(false);
+    if (dialogueIndex < INTRO_DIALOGUE.length - 1) {
+      setDialogueIndex(dialogueIndex + 1);
+    } else {
+      // Conversation complete, show video
+      setShowConversation(false);
+      setShowVideo(true);
+    }
+  };
+
+  const handleDialogueComplete = () => {
+    setCanAdvance(true);
+  };
+
+  if (showConversation && isUnlocked) {
+    const currentDialogue = INTRO_DIALOGUE[dialogueIndex];
+    if (!currentDialogue) {
+      setShowConversation(false);
+      return null;
+    }
+
+    const isChiragSpeaking = currentDialogue.character === "chirag";
+
+    const handleConversationSkip = () => {
+      setShowConversation(false);
+      setShowVideo(true);
+    };
+
+    return (
+      <View style={styles.conversationContainer}>
+        {/* Skip button */}
+        <TouchableOpacity
+          style={styles.conversationSkipButton}
+          onPress={handleConversationSkip}
+        >
+          <Text style={styles.conversationSkipButtonText}>Skip</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.conversationTouchable}
+          onPress={handleDialogueNext}
+          disabled={!canAdvance}
+        >
+          {/* Manga-style background */}
+          <View style={styles.mangaBackground}>
+            {/* Characters facing each other */}
+            <View style={styles.charactersContainer}>
+              {/* Chirag on the left */}
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require("@/assets/images/Characters/chirag.png")}
+                  style={[
+                    styles.conversationCharacter,
+                    {
+                      opacity: isChiragSpeaking ? 1 : 0.4,
+                      transform: [
+                        { scaleX: -1 },
+                        { scale: isChiragSpeaking ? 1.1 : 1 },
+                      ],
+                    },
+                  ]}
+                />
+              </View>
+
+              {/* Sanji on the right */}
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require("@/assets/images/Characters/Sanji.png")}
+                  style={[
+                    styles.conversationCharacter,
+                    {
+                      opacity: !isChiragSpeaking ? 1 : 0.4,
+                      transform: [{ scale: !isChiragSpeaking ? 1.1 : 1 }],
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* Speech bubble for Chirag (left side, above) */}
+            {isChiragSpeaking && (
+              <View style={styles.speechBubbleLeft}>
+                <View style={styles.speechBubbleContent}>
+                  <TypewriterText
+                    text={currentDialogue.text}
+                    speed={30}
+                    onComplete={handleDialogueComplete}
+                  />
+                </View>
+                <View style={styles.speechBubbleTailLeft} />
+              </View>
+            )}
+
+            {/* Speech bubble for Sanji (right side, below) */}
+            {!isChiragSpeaking && (
+              <View style={styles.speechBubbleRight}>
+                <View style={styles.speechBubbleTailRight} />
+                <View style={styles.speechBubbleContent}>
+                  <TypewriterText
+                    text={currentDialogue.text}
+                    speed={30}
+                    onComplete={handleDialogueComplete}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Tap to continue hint */}
+            {canAdvance && <Text style={styles.tapHint}>Tap to continue</Text>}
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   if (showWrongAnswerMessage) {
     return (
       <View style={styles.messageContainer}>
@@ -292,7 +468,12 @@ export default function Level3Screen() {
             <Text style={styles.rewardMessage}>
               Collect your reward for completing the level.
             </Text>
-            <PrimaryButton title="Continue" onPress={handleRewardContinue} />
+            <PrimaryButton
+              title="Continue"
+              onPress={handleRewardContinue}
+              style={styles.continueButton}
+              textStyle={styles.continueButtonText}
+            />
           </View>
         </View>
       </View>
@@ -348,7 +529,6 @@ export default function Level3Screen() {
       >
         <View style={styles.headerSection}>
           <Text style={styles.title}>Words of a True Pirate</Text>
-          <Text style={styles.subtitle}>Seek the hidden sentence.</Text>
         </View>
 
         <View style={styles.cipherContainer}>
@@ -358,19 +538,21 @@ export default function Level3Screen() {
           <Text style={styles.referenceText}>East Blue • Chapter 24</Text>
 
           <View style={styles.inputBlock}>
-            <Text style={styles.inputInstruction}>
-              Enter the sentence exactly as written.
-            </Text>
             <TextInput
               style={styles.input}
               value={input}
               onChangeText={setInput}
               placeholder="Type the full sentence"
-              placeholderTextColor="#888"
+              placeholderTextColor="rgba(255, 255, 255, 0.7)"
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <PrimaryButton title="Submit" onPress={handleSubmit} />
+            <PrimaryButton
+              title="Submit"
+              onPress={handleSubmit}
+              style={styles.submitButton}
+              textStyle={styles.submitButtonText}
+            />
           </View>
         </View>
       </ScrollView>
@@ -389,6 +571,8 @@ export default function Level3Screen() {
                 setHintLevel(1);
                 setExpandedHints({ 1: true }); // Only expand hint 1, collapse others
               }}
+              style={styles.hintButton}
+              textStyle={styles.hintButtonText}
             />
           )}
 
@@ -418,6 +602,8 @@ export default function Level3Screen() {
                   return newExpanded;
                 });
               }}
+              style={styles.hintButton}
+              textStyle={styles.hintButtonText}
             />
           )}
 
@@ -441,6 +627,8 @@ export default function Level3Screen() {
                   return newExpanded;
                 });
               }}
+              style={styles.hintButton}
+              textStyle={styles.hintButtonText}
             />
           )}
 
@@ -464,6 +652,8 @@ export default function Level3Screen() {
                   return newExpanded;
                 });
               }}
+              style={styles.hintButton}
+              textStyle={styles.hintButtonText}
             />
           )}
 
@@ -507,30 +697,30 @@ export default function Level3Screen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0b1d2a",
+    backgroundColor: "#ffeb3b",
   },
   scrollContent: {
     flex: 1,
   },
   scrollContentContainer: {
-    padding: 20,
-    paddingTop: 80,
-    paddingBottom: 200, // Space for hints section at bottom
+    padding: 30,
+    paddingTop: 100,
+    paddingBottom: 250, // Space for hints section at bottom
   },
   headerSection: {
     width: "100%",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 10,
   },
   title: {
-    color: "#fff",
+    color: "#000",
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 10,
     textAlign: "center",
   },
   subtitle: {
-    color: "#ccc",
+    color: "#000",
     fontSize: 16,
     marginBottom: 10,
     textAlign: "center",
@@ -550,43 +740,49 @@ const styles = StyleSheet.create({
   cipherContainer: {
     width: "100%",
     alignItems: "center",
+    marginBottom: 30,
   },
   hintsSection: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(11, 29, 42, 0.95)",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(74, 157, 154, 0.3)",
+    backgroundColor: "#fff",
+    borderTopWidth: 2,
+    borderTopColor: "#c99d5f",
     maxHeight: 300,
   },
   hintsScrollView: {
     flex: 1,
   },
   hintsScrollContent: {
-    padding: 20,
-    paddingBottom: 20,
+    padding: 24,
+    paddingBottom: 24,
   },
   poemLine: {
-    color: "#fff",
-    fontSize: 18,
+    color: "#000",
+    fontSize: 16,
     textAlign: "center",
+    fontWeight: "500",
+    marginBottom: 0,
+    lineHeight: 24,
   },
   referenceText: {
-    color: "#ffd700",
+    color: "#000",
     fontSize: 16,
-    marginTop: 16,
+    marginTop: 24,
     marginBottom: 20,
     textAlign: "center",
+    fontWeight: "600",
   },
   hintBoxContainer: {
     width: "100%",
-    marginTop: 12,
+    marginTop: 16,
+    marginBottom: 8,
     borderRadius: 12,
-    backgroundColor: "rgba(30, 61, 47, 0.6)",
-    borderWidth: 1,
-    borderColor: "#4a9d7a",
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "#c99d5f",
     overflow: "hidden",
     alignSelf: "stretch",
   },
@@ -595,51 +791,63 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: 14,
-    backgroundColor: "rgba(74, 157, 154, 0.2)",
+    backgroundColor: "#fff",
   },
   hintBoxTitle: {
-    color: "#ffd700",
+    color: "#000",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   hintBoxToggle: {
-    color: "#fff",
+    color: "#000",
     fontSize: 20,
     fontWeight: "bold",
   },
   hintBoxContent: {
     overflow: "hidden",
+    backgroundColor: "#fff",
   },
   hintBoxContentInner: {
     position: "absolute",
     width: "100%",
   },
   hintBoxText: {
-    color: "#ccc",
+    color: "#000",
     fontSize: 15,
     padding: 14,
     lineHeight: 22,
+    fontWeight: "400",
   },
   inputBlock: {
     width: "100%",
-    marginTop: 24,
+    marginTop: 20,
+    marginBottom: 20,
   },
   inputInstruction: {
-    color: "#ccc",
+    color: "#000",
     fontSize: 16,
-    marginBottom: 8,
+    marginBottom: 16,
     textAlign: "center",
+    fontWeight: "600",
   },
   input: {
     width: "100%",
     backgroundColor: "#1e3d2f",
     color: "#fff",
     fontSize: 18,
-    padding: 15,
+    padding: 18,
     borderRadius: 10,
-    marginBottom: 20,
+    marginBottom: 30,
     borderWidth: 2,
     borderColor: "#4a9d7a",
+  },
+  submitButton: {
+    backgroundColor: "#000",
+    borderWidth: 2,
+    borderColor: "#ffeb3b",
+  },
+  submitButtonText: {
+    color: "#ffeb3b",
   },
   skipButton: {
     position: "absolute",
@@ -647,22 +855,166 @@ const styles = StyleSheet.create({
     right: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: "rgba(30, 61, 47, 0.8)",
+    backgroundColor: "#000",
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#4a9d7a",
+    borderWidth: 2,
+    borderColor: "#ffeb3b",
     zIndex: 10,
   },
   skipButtonText: {
-    color: "#fff",
+    color: "#ffeb3b",
     fontSize: 14,
     fontWeight: "600",
+  },
+  hintButton: {
+    backgroundColor: "#000",
+    borderWidth: 2,
+    borderColor: "#ffeb3b",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  hintButtonText: {
+    color: "#ffeb3b",
+    fontSize: 18,
+    fontWeight: "700",
   },
   videoContainer: {
     flex: 1,
     width: "100%",
     height: "100%",
     backgroundColor: "#000",
+  },
+  conversationContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    position: "relative",
+  },
+  conversationTouchable: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  conversationSkipButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: "#000",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#000",
+    zIndex: 2000,
+    elevation: 20,
+  },
+  conversationSkipButtonText: {
+    color: "#ffeb3b",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  mangaBackground: {
+    flex: 1,
+    backgroundColor: "#ffeb3b",
+    position: "relative",
+    width: "100%",
+    overflow: "hidden",
+  },
+  charactersContainer: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-around",
+    alignItems: "center",
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 120,
+    paddingBottom: 200,
+  },
+  characterWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    width: "50%",
+  },
+  conversationCharacter: {
+    width: 280,
+    height: 400,
+    resizeMode: "contain",
+    maxWidth: "100%",
+    maxHeight: 400,
+  },
+  speechBubbleLeft: {
+    position: "absolute",
+    top: 100,
+    left: "10%",
+    width: "40%",
+    zIndex: 1000,
+    elevation: 10,
+    alignItems: "flex-start",
+  },
+  speechBubbleRight: {
+    position: "absolute",
+    bottom: 160,
+    right: "10%",
+    width: "40%",
+    zIndex: 1000,
+    elevation: 10,
+    alignItems: "flex-end",
+  },
+  speechBubbleContent: {
+    backgroundColor: "#ffffff",
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: "#000000",
+    shadowColor: "#000",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 8,
+    minHeight: 60,
+    justifyContent: "center",
+  },
+  speechBubbleTailLeft: {
+    width: 20,
+    height: 20,
+    backgroundColor: "#ffffff",
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderColor: "#000000",
+    transform: [{ rotate: "45deg" }],
+    marginTop: -10,
+    marginLeft: 20,
+    alignSelf: "flex-start",
+  },
+  speechBubbleTailRight: {
+    width: 20,
+    height: 20,
+    backgroundColor: "#ffffff",
+    borderLeftWidth: 3,
+    borderTopWidth: 3,
+    borderColor: "#000000",
+    transform: [{ rotate: "45deg" }],
+    marginBottom: -10,
+    marginRight: 20,
+    alignSelf: "flex-end",
+  },
+  tapHint: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+    color: "#666",
+    fontSize: 14,
+    fontStyle: "italic",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   successContainer: {
     flex: 1,
@@ -700,7 +1052,7 @@ const styles = StyleSheet.create({
   },
   rewardContainer: {
     flex: 1,
-    backgroundColor: "#0b1d2a",
+    backgroundColor: "#ffeb3b",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -708,12 +1060,12 @@ const styles = StyleSheet.create({
   rewardCard: {
     width: "90%",
     maxWidth: 380,
-    backgroundColor: "#1a1a2e",
+    backgroundColor: "#1e3d2f",
     borderRadius: 24,
     alignItems: "center",
     borderWidth: 3,
-    borderColor: "#ffd700",
-    shadowColor: "#ffd700",
+    borderColor: "#4a9d7a",
+    shadowColor: "#4a9d7a",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 16,
@@ -729,7 +1081,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderColor: "#ffd700",
+    borderColor: "#4a9d7a",
     borderTopLeftRadius: 24,
   },
   cornerDecorRight: {
@@ -740,7 +1092,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderBottomWidth: 4,
     borderRightWidth: 4,
-    borderColor: "#ffd700",
+    borderColor: "#4a9d7a",
     borderBottomRightRadius: 24,
   },
   starDecor1: {
@@ -748,16 +1100,16 @@ const styles = StyleSheet.create({
     top: 15,
     left: 20,
     fontSize: 24,
-    color: "#ffd700",
-    opacity: 0.6,
+    color: "#ffeb3b",
+    opacity: 0.8,
   },
   starDecor2: {
     position: "absolute",
     top: 15,
     right: 20,
     fontSize: 24,
-    color: "#ffd700",
-    opacity: 0.6,
+    color: "#ffeb3b",
+    opacity: 0.8,
   },
   rewardContent: {
     width: "100%",
@@ -767,14 +1119,14 @@ const styles = StyleSheet.create({
   },
   rewardBadge: {
     fontSize: 64,
-    color: "#ffd700",
+    color: "#ffeb3b",
     marginBottom: 12,
-    textShadowColor: "rgba(255, 215, 0, 0.8)",
+    textShadowColor: "rgba(255, 235, 59, 0.8)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
   rewardTitle: {
-    color: "#ffd700",
+    color: "#fff",
     fontSize: 24,
     fontWeight: "900",
     letterSpacing: 2,
@@ -788,17 +1140,26 @@ const styles = StyleSheet.create({
   dividerLine: {
     width: "80%",
     height: 2,
-    backgroundColor: "#ffd700",
+    backgroundColor: "#4a9d7a",
     marginBottom: 20,
     opacity: 0.5,
   },
   rewardMessage: {
-    color: "#e0e0e0",
+    color: "#fff",
     fontSize: 16,
     textAlign: "center",
     marginBottom: 28,
     lineHeight: 24,
     fontWeight: "500",
+  },
+  continueButton: {
+    backgroundColor: "rgba(30, 61, 47, 0.8)",
+    borderWidth: 1,
+    borderColor: "rgba(74, 157, 154, 0.5)",
+  },
+  continueButtonText: {
+    color: "#fff",
+    fontWeight: "700",
   },
   videoContainer: {
     flex: 1,

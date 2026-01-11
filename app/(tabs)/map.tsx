@@ -48,8 +48,8 @@ const LEVELS: Level[] = [
   {
     id: 3,
     name: "Wisdom of the Seas",
-    character: "Buggy",
-    image: require("@/assets/images/Characters/buggy.png"),
+    character: "Sanji",
+    image: require("@/assets/images/Characters/Sanji.png"),
     position: { x: 0.75, y: 0.5 },
   },
   {

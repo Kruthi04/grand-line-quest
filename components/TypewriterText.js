@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Text } from "react-native";
+import { Text, StyleSheet } from "react-native";
 
 export default function TypewriterText({ text, speed = 30, onComplete }) {
   const [displayedText, setDisplayedText] = useState("");
@@ -12,6 +12,10 @@ export default function TypewriterText({ text, speed = 30, onComplete }) {
   useEffect(() => {
     let index = 0;
     setDisplayedText("");
+
+    if (!text) {
+      return;
+    }
 
     const interval = setInterval(() => {
       index++;
@@ -26,5 +30,14 @@ export default function TypewriterText({ text, speed = 30, onComplete }) {
     return () => clearInterval(interval);
   }, [text, speed]);
 
-  return <Text>{displayedText}</Text>;
+  return <Text style={styles.text}>{displayedText}</Text>;
 }
+
+const styles = StyleSheet.create({
+  text: {
+    color: "#000",
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "400",
+  },
+});

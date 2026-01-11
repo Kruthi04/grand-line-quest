@@ -1,5 +1,6 @@
 import CutscenePlayer from "@/components/CutscenePlayer";
 import PrimaryButton from "@/components/PrimaryButton";
+import TypewriterText from "@/components/TypewriterText";
 import { useGame } from "@/context/GameContext";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -13,6 +14,62 @@ const MEMORY_IMAGES = [
   require("@/assets/images/MemoryGame/onepiece_logo.jpeg"),
   require("@/assets/images/MemoryGame/ship.jpeg"),
   require("@/assets/images/MemoryGame/straw_hat.jpeg"),
+];
+
+// Conversation dialogue before the game starts
+const INTRO_DIALOGUE = [
+  {
+    character: "shanks",
+    text: "Heh… rushing in won't help you here, Chirag.",
+  },
+  {
+    character: "chirag",
+    text: "This doesn't look like a fight. What am I supposed to do?",
+  },
+  {
+    character: "shanks",
+    text: "Not everything on the sea is won with strength. Sometimes, you learn by revealing things one step at a time.",
+  },
+  {
+    character: "chirag",
+    text: "Revealing…?",
+  },
+  {
+    character: "shanks",
+    text: "Each choice opens a path, even if only for a moment. Pay attention to what you uncover.",
+  },
+  {
+    character: "chirag",
+    text: "So I have to remember what I see.",
+  },
+  {
+    character: "shanks",
+    text: "Exactly. One card at a time. Notice the shape. The symbol. The place it appeared.",
+  },
+  {
+    character: "chirag",
+    text: "And match them.",
+  },
+  {
+    character: "shanks",
+    text: "Yes. Stay calm. Don't force it. Observation Haki grows when you trust your awareness.",
+  },
+  {
+    character: "chirag",
+    text: "If I lose focus, I'll forget.",
+  },
+  {
+    character: "shanks",
+    text: "Heh. And forgetting is the same as being blind at sea.",
+  },
+  {
+    character: "chirag",
+    text: "…Alright. I'll take it slow.",
+  },
+  {
+    character: "shanks",
+    text: "Good. Open your senses, Chirag. Let your Observation Haki guide you.",
+  },
 ];
 
 export default function Level1Screen() {
@@ -37,6 +94,9 @@ export default function Level1Screen() {
   const [showMatchaVideo, setShowMatchaVideo] = useState(false);
   const [showReward, setShowReward] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showConversation, setShowConversation] = useState(true);
+  const [dialogueIndex, setDialogueIndex] = useState(0);
+  const [canAdvance, setCanAdvance] = useState(false);
 
   // Initialize game
   useEffect(() => {
@@ -111,9 +171,9 @@ export default function Level1Screen() {
 
           // Check if all pairs are matched
           if (newMatchedPairs.length === MEMORY_IMAGES.length) {
-            // Game complete!
+            // Game complete! Skip cutscene and go directly to powerup
             setTimeout(() => {
-              setShowCutscene(true);
+              setShowPowerup(true);
             }, 500);
           }
         } else {
@@ -161,24 +221,130 @@ export default function Level1Screen() {
     router.push("/map");
   };
 
+  const handleDialogueNext = () => {
+    if (!canAdvance) return;
+
+    setCanAdvance(false);
+    if (dialogueIndex < INTRO_DIALOGUE.length - 1) {
+      setDialogueIndex(dialogueIndex + 1);
+    } else {
+      // Conversation complete, start the game
+      setShowConversation(false);
+    }
+  };
+
+  const handleDialogueComplete = () => {
+    setCanAdvance(true);
+  };
+
+  if (showConversation) {
+    const currentDialogue = INTRO_DIALOGUE[dialogueIndex];
+    if (!currentDialogue) {
+      setShowConversation(false);
+      return null;
+    }
+
+    const isChiragSpeaking = currentDialogue.character === "chirag";
+
+    const handleConversationSkip = () => {
+      setShowConversation(false);
+    };
+
+    return (
+      <View style={styles.conversationContainer}>
+        {/* Skip button */}
+        <TouchableOpacity
+          style={styles.conversationSkipButton}
+          onPress={handleConversationSkip}
+        >
+          <Text style={styles.conversationSkipButtonText}>Skip</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.conversationTouchable}
+          onPress={handleDialogueNext}
+          disabled={!canAdvance}
+        >
+          {/* Manga-style background */}
+          <View style={styles.mangaBackground}>
+            {/* Characters facing each other */}
+            <View style={styles.charactersContainer}>
+              {/* Chirag on the left */}
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require("@/assets/images/Characters/chirag.png")}
+                  style={[
+                    styles.conversationCharacter,
+                    styles.chiragMirrored,
+                    {
+                      opacity: isChiragSpeaking ? 1 : 0.4,
+                      transform: [
+                        { scaleX: -1 },
+                        { scale: isChiragSpeaking ? 1.1 : 1 },
+                      ],
+                    },
+                  ]}
+                />
+              </View>
+
+              {/* Shanks on the right */}
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require("@/assets/images/Characters/Shanks.png")}
+                  style={[
+                    styles.conversationCharacter,
+                    {
+                      opacity: !isChiragSpeaking ? 1 : 0.4,
+                      transform: [{ scale: !isChiragSpeaking ? 1.1 : 1 }],
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* Speech bubble for Chirag (left side, above) */}
+            {isChiragSpeaking && (
+              <View style={styles.speechBubbleLeft}>
+                <View style={styles.speechBubbleContent}>
+                  <TypewriterText
+                    text={currentDialogue.text}
+                    speed={30}
+                    onComplete={handleDialogueComplete}
+                  />
+                </View>
+                <View style={styles.speechBubbleTailLeft} />
+              </View>
+            )}
+
+            {/* Speech bubble for Shanks (right side, below) */}
+            {!isChiragSpeaking && (
+              <View style={styles.speechBubbleRight}>
+                <View style={styles.speechBubbleTailRight} />
+                <View style={styles.speechBubbleContent}>
+                  <TypewriterText
+                    text={currentDialogue.text}
+                    speed={30}
+                    onComplete={handleDialogueComplete}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Tap to continue hint */}
+            {canAdvance && <Text style={styles.tapHint}>Tap to continue</Text>}
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   if (showMatchaVideo) {
     return (
       <View style={styles.videoContainer}>
         <CutscenePlayer
           videoSource={require("@/assets/videos/chiragDrinkingMatcha.mp4")}
           onComplete={handleMatchaVideoComplete}
-        />
-      </View>
-    );
-  }
-
-  if (showCutscene) {
-    return (
-      <View style={styles.container}>
-        <CutscenePlayer
-          animationType="matcha"
-          onComplete={handleCutsceneComplete}
-          duration={2000}
         />
       </View>
     );
@@ -232,10 +398,6 @@ export default function Level1Screen() {
           </TouchableOpacity>
         ))}
       </View>
-
-      <TouchableOpacity style={styles.resetButton} onPress={initializeGame}>
-        <Text style={styles.resetButtonText}>Reset Game</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -243,7 +405,7 @@ export default function Level1Screen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0b1d2a",
+    backgroundColor: "#ffeb3b",
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -255,13 +417,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
   },
   title: {
-    color: "#fff",
+    color: "#000",
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 10,
   },
   subtitle: {
-    color: "#ccc",
+    color: "#000",
     fontSize: 18,
     marginBottom: 30,
     textAlign: "center",
@@ -276,21 +438,22 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   card: {
-    width: 90,
-    height: 90,
-    borderRadius: 10,
+    width: 80,
+    height: 80,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
+    borderWidth: 3,
     overflow: "hidden",
+    margin: 4,
   },
   cardHidden: {
     backgroundColor: "#1e3d2f",
     borderColor: "#4a9d7a",
   },
   cardFlipped: {
-    backgroundColor: "#2a4d3a",
-    borderColor: "#6bc99a",
+    backgroundColor: "#fff",
+    borderColor: "#4a9d7a",
   },
   cardImage: {
     width: "100%",
@@ -298,17 +461,17 @@ const styles = StyleSheet.create({
   },
   cardBack: {
     fontSize: 32,
-    color: "#4a9d7a",
+    color: "#fff",
     fontWeight: "bold",
   },
   powerupTitle: {
-    color: "#fff",
+    color: "#000",
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 20,
   },
   powerupText: {
-    color: "#4a9d7a",
+    color: "#000",
     fontSize: 24,
     marginBottom: 20,
   },
@@ -339,9 +502,9 @@ const styles = StyleSheet.create({
     right: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: "rgba(30, 61, 47, 0.8)",
+    backgroundColor: "#1e3d2f",
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#4a9d7a",
     zIndex: 10,
   },
@@ -352,7 +515,7 @@ const styles = StyleSheet.create({
   },
   rewardContainer: {
     flex: 1,
-    backgroundColor: "#0b1d2a",
+    backgroundColor: "#ffeb3b",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -361,14 +524,14 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 400,
     padding: 30,
-    backgroundColor: "rgba(0,0,0,0.75)",
+    backgroundColor: "#1e3d2f",
     borderRadius: 16,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#ffd700",
+    borderColor: "#4a9d7a",
   },
   rewardTitle: {
-    color: "#ffd700",
+    color: "#fff",
     fontSize: 28,
     fontWeight: "700",
     marginBottom: 20,
@@ -380,5 +543,141 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 30,
     lineHeight: 26,
+  },
+  conversationContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    position: "relative",
+  },
+  conversationTouchable: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  conversationSkipButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: "#000",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#000",
+    zIndex: 2000,
+    elevation: 20,
+  },
+  conversationSkipButtonText: {
+    color: "#ffeb3b",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  mangaBackground: {
+    flex: 1,
+    backgroundColor: "#ffeb3b",
+    position: "relative",
+    width: "100%",
+    overflow: "hidden",
+  },
+  charactersContainer: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-around",
+    alignItems: "center",
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 120,
+    paddingBottom: 200,
+  },
+  characterWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    width: "50%",
+  },
+  conversationCharacter: {
+    width: 280,
+    height: 400,
+    resizeMode: "contain",
+    maxWidth: "100%",
+    maxHeight: 400,
+  },
+  chiragMirrored: {
+    transform: [{ scaleX: -1 }],
+  },
+  activeCharacter: {
+    opacity: 1,
+  },
+  inactiveCharacter: {
+    opacity: 0.4,
+  },
+  speechBubbleLeft: {
+    position: "absolute",
+    top: 100,
+    left: "10%",
+    width: "40%",
+    zIndex: 1000,
+    elevation: 10,
+    alignItems: "flex-start",
+  },
+  speechBubbleRight: {
+    position: "absolute",
+    bottom: 100,
+    right: "10%",
+    width: "40%",
+    zIndex: 1000,
+    elevation: 10,
+    alignItems: "flex-end",
+  },
+  speechBubbleContent: {
+    backgroundColor: "#ffffff",
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: "#000000",
+    shadowColor: "#000",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 8,
+    minHeight: 60,
+    justifyContent: "center",
+  },
+  speechBubbleTailLeft: {
+    width: 20,
+    height: 20,
+    backgroundColor: "#ffffff",
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderColor: "#000000",
+    transform: [{ rotate: "45deg" }],
+    marginTop: -10,
+    marginLeft: 20,
+    alignSelf: "flex-start",
+  },
+  speechBubbleTailRight: {
+    width: 20,
+    height: 20,
+    backgroundColor: "#ffffff",
+    borderLeftWidth: 3,
+    borderTopWidth: 3,
+    borderColor: "#000000",
+    transform: [{ rotate: "45deg" }],
+    marginBottom: -10,
+    marginRight: 20,
+    alignSelf: "flex-end",
+  },
+  tapHint: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+    color: "#666",
+    fontSize: 14,
+    fontStyle: "italic",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
 });
