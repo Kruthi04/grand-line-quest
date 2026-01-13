@@ -52,7 +52,7 @@ const FINAL_DIALOGUE = [
   },
   {
     character: "chirag",
-    text: "I'm ready.",
+    text: "I'm ready, Kruthi.",
   },
   {
     character: "kruthi",
