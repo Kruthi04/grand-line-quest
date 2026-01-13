@@ -91,6 +91,12 @@ export default function FinalLevelScreen() {
   }, [power, getRequiredPower]);
 
   useEffect(() => {
+    if (showInitialVideo) {
+      lowerHomeMusic();
+    }
+  }, [showInitialVideo, lowerHomeMusic]);
+
+  useEffect(() => {
     if (showCompletionPage) {
       if (animationRef.current) {
         animationRef.current.stop();
@@ -164,6 +170,7 @@ export default function FinalLevelScreen() {
   const handleInitialVideoComplete = () => {
     setShowInitialVideo(false);
     setShowConversation(true);
+    resumeHomeMusic();
   };
 
   const handleBirthdayVideoComplete = () => {
@@ -316,10 +323,7 @@ export default function FinalLevelScreen() {
             styles.completionCard,
             {
               opacity: fadeAnim,
-              transform: [
-                { translateY: translateYAnim },
-                { scale: scaleAnim },
-              ],
+              transform: [{ translateY: translateYAnim }, { scale: scaleAnim }],
             },
           ]}
         >
