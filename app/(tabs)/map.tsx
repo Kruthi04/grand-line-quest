@@ -64,7 +64,7 @@ const LEVELS: Level[] = [
     id: 5,
     name: "Captain's Oath",
     character: "Usopp",
-    image: require("@/assets/images/Characters/UsoppChar.png"),
+    image: require("@/assets/images/Characters/kruthi1.png"),
     position: { x: 0.7, y: 0.75 },
   },
 ];

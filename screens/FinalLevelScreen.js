@@ -1,10 +1,12 @@
 import CutscenePlayer from "@/components/CutscenePlayer";
 import PrimaryButton from "@/components/PrimaryButton";
+import TypewriterText from "@/components/TypewriterText";
 import { useGame } from "@/context/GameContext";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,6 +21,45 @@ const OATH_STATEMENTS = [
   "I accept the responsibility that comes with power.",
 ];
 
+const FINAL_DIALOGUE = [
+  {
+    character: "kruthi",
+    text: "Congrats, Chirag.",
+  },
+  {
+    character: "chirag",
+    text: "I guess this really is my turn.",
+  },
+  {
+    character: "kruthi",
+    text: "Yeah. Shanks himself named you the captain.",
+  },
+  {
+    character: "chirag",
+    text: "I still can't believe it.",
+  },
+  {
+    character: "kruthi",
+    text: "You earned it. Every challenge, every trial—you pushed through all of them.",
+  },
+  {
+    character: "chirag",
+    text: "So this is really the end.",
+  },
+  {
+    character: "kruthi",
+    text: "The end of the journey… and the start of something bigger. The next step is taking the Captain's Oath.",
+  },
+  {
+    character: "chirag",
+    text: "I'm ready.",
+  },
+  {
+    character: "kruthi",
+    text: "I'm so proud of you, Chirag. Go on. Take the oath.",
+  },
+];
+
 export default function FinalLevelScreen() {
   const router = useRouter();
   const {
@@ -26,7 +67,6 @@ export default function FinalLevelScreen() {
     getRequiredPower,
     completeLevel,
     resumeHomeMusic,
-    //fadeOutHomeMusic,
     lowerHomeMusic,
     pauseHomeMusic,
   } = useGame();
@@ -35,27 +75,23 @@ export default function FinalLevelScreen() {
   const [showCompletionPage, setShowCompletionPage] = useState(false);
   const [showBirthdayVideo, setShowBirthdayVideo] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [showConversation, setShowConversation] = useState(false);
+  const [dialogueIndex, setDialogueIndex] = useState(0);
+  const [canAdvance, setCanAdvance] = useState(false);
+  const [showInitialVideo, setShowInitialVideo] = useState(true);
 
-  // Animation values for completion page
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(20)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const animationRef = useRef(null);
 
-  // Fade out home music when level loads
-  // useEffect(() => {
-  //   fadeOutHomeMusic();
-  // }, [fadeOutHomeMusic]);
-
   useEffect(() => {
     const requiredPower = getRequiredPower(5);
     setIsUnlocked(power >= requiredPower);
-  }, [power]);
+  }, [power, getRequiredPower]);
 
-  // Auto-transition from completion page to birthday video after 5 seconds
   useEffect(() => {
     if (showCompletionPage) {
-      // Stop any existing animations first
       if (animationRef.current) {
         animationRef.current.stop();
       }
@@ -64,8 +100,6 @@ export default function FinalLevelScreen() {
       translateYAnim.setValue(20);
       scaleAnim.setValue(0.95);
 
-      // Animate riseIn effect (matches CSS keyframes)
-      // Using default easing for smooth animation
       animationRef.current = Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -86,13 +120,12 @@ export default function FinalLevelScreen() {
       animationRef.current.start();
 
       const timer = setTimeout(() => {
-        pauseHomeMusic(); // Pause music when birthday video plays
+        pauseHomeMusic();
         if (animationRef.current) {
           animationRef.current.stop();
         }
         setShowCompletionPage(false);
         setShowBirthdayVideo(true);
-        // Reset animations
         fadeAnim.setValue(0);
         translateYAnim.setValue(20);
         scaleAnim.setValue(0.95);
@@ -108,7 +141,7 @@ export default function FinalLevelScreen() {
         scaleAnim.setValue(0.95);
       };
     }
-  }, [showCompletionPage, lowerHomeMusic, pauseHomeMusic, fadeAnim, translateYAnim, scaleAnim]);
+  }, [showCompletionPage, pauseHomeMusic, fadeAnim, translateYAnim, scaleAnim]);
 
   const toggleStatement = (index) => {
     if (checkedStatements.includes(index)) {
@@ -121,10 +154,16 @@ export default function FinalLevelScreen() {
   const handleAcceptOath = () => {
     if (checkedStatements.length === OATH_STATEMENTS.length) {
       setShowOath(false);
+      lowerHomeMusic();
       setShowCompletionPage(true);
     } else {
       alert("Please accept all statements to continue.");
     }
+  };
+
+  const handleInitialVideoComplete = () => {
+    setShowInitialVideo(false);
+    setShowConversation(true);
   };
 
   const handleBirthdayVideoComplete = () => {
@@ -139,10 +178,134 @@ export default function FinalLevelScreen() {
     router.push("/map");
   };
 
+  const handleDialogueNext = () => {
+    if (!canAdvance) return;
+
+    setCanAdvance(false);
+    if (dialogueIndex < FINAL_DIALOGUE.length - 1) {
+      setDialogueIndex(dialogueIndex + 1);
+    } else {
+      setShowConversation(false);
+      setShowOath(true);
+    }
+  };
+
+  const handleDialogueComplete = () => {
+    setCanAdvance(true);
+  };
+
+  // Initial Video Screen
+  if (showInitialVideo) {
+    return (
+      <View style={styles.videoContainer}>
+        <CutscenePlayer
+          videoSource={require("@/assets/videos/KruthiChiragVideo.mp4")}
+          onComplete={handleInitialVideoComplete}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  }
+
+  // Conversation Screen
+  if (showConversation) {
+    const currentDialogue = FINAL_DIALOGUE[dialogueIndex];
+    if (!currentDialogue) {
+      setShowConversation(false);
+      return null;
+    }
+
+    const isChiragSpeaking = currentDialogue.character === "chirag";
+
+    const handleConversationSkip = () => {
+      setShowConversation(false);
+      setShowOath(true);
+    };
+
+    return (
+      <View style={styles.conversationContainer}>
+        <TouchableOpacity
+          style={styles.conversationSkipButton}
+          onPress={handleConversationSkip}
+        >
+          <Text style={styles.conversationSkipButtonText}>Skip</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.conversationTouchable}
+          onPress={handleDialogueNext}
+          disabled={!canAdvance}
+        >
+          <View style={styles.mangaBackground}>
+            <View style={styles.charactersContainer}>
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require("@/assets/images/Characters/chirag.png")}
+                  style={[
+                    styles.conversationCharacter,
+                    {
+                      opacity: isChiragSpeaking ? 1 : 0.4,
+                      transform: [
+                        { scaleX: -1 },
+                        { scale: isChiragSpeaking ? 1.1 : 1 },
+                      ],
+                    },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.characterWrapper}>
+                <Image
+                  source={require("@/assets/images/Characters/kruthi1.png")}
+                  style={[
+                    styles.conversationCharacter,
+                    {
+                      opacity: !isChiragSpeaking ? 1 : 0.4,
+                      transform: [{ scale: !isChiragSpeaking ? 1.1 : 1 }],
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {isChiragSpeaking && (
+              <View style={styles.speechBubbleLeft}>
+                <View style={styles.speechBubbleContent}>
+                  <TypewriterText
+                    text={currentDialogue.text}
+                    speed={30}
+                    onComplete={handleDialogueComplete}
+                  />
+                </View>
+                <View style={styles.speechBubbleTailLeft} />
+              </View>
+            )}
+
+            {!isChiragSpeaking && (
+              <View style={styles.speechBubbleRight}>
+                <View style={styles.speechBubbleTailRight} />
+                <View style={styles.speechBubbleContent}>
+                  <TypewriterText
+                    text={currentDialogue.text}
+                    speed={30}
+                    onComplete={handleDialogueComplete}
+                  />
+                </View>
+              </View>
+            )}
+
+            {canAdvance && <Text style={styles.tapHint}>Tap to continue</Text>}
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Completion Page
   if (showCompletionPage) {
     return (
       <View style={styles.completionContainer}>
-        {/* Background decorative stars */}
         <Text style={styles.starDecor1}>✦</Text>
         <Text style={styles.starDecor2}>✦</Text>
         <Text style={styles.starDecor3}>✦</Text>
@@ -153,17 +316,18 @@ export default function FinalLevelScreen() {
             styles.completionCard,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: translateYAnim }, { scale: scaleAnim }],
+              transform: [
+                { translateY: translateYAnim },
+                { scale: scaleAnim },
+              ],
             },
           ]}
         >
-          {/* Decorative corner elements */}
           <View style={styles.cornerDecorLeft} />
           <View style={styles.cornerDecorRight} />
           <View style={styles.cornerDecorTopRight} />
           <View style={styles.cornerDecorBottomLeft} />
 
-          {/* Top decorative stars */}
           <Text style={styles.cardStar1}>✦</Text>
           <Text style={styles.cardStar2}>✦</Text>
 
@@ -239,6 +403,7 @@ export default function FinalLevelScreen() {
     );
   }
 
+  // Birthday Video
   if (showBirthdayVideo) {
     return (
       <View style={styles.videoContainer}>
@@ -251,6 +416,7 @@ export default function FinalLevelScreen() {
     );
   }
 
+  // Locked Level
   if (!isUnlocked) {
     const requiredPower = getRequiredPower(5);
     return (
@@ -268,6 +434,7 @@ export default function FinalLevelScreen() {
     );
   }
 
+  // Oath Screen
   return (
     <ScrollView
       style={styles.container}
@@ -592,5 +759,132 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.8)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+  },
+  conversationContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    position: "relative",
+  },
+  conversationTouchable: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  conversationSkipButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: "#1e3d2f",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#4a9d7a",
+    zIndex: 2000,
+    elevation: 20,
+  },
+  conversationSkipButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  mangaBackground: {
+    flex: 1,
+    backgroundColor: "#ffeb3b",
+    position: "relative",
+    width: "100%",
+    overflow: "hidden",
+  },
+  charactersContainer: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-around",
+    alignItems: "center",
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 120,
+    paddingBottom: 200,
+  },
+  characterWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    width: "50%",
+  },
+  conversationCharacter: {
+    width: 280,
+    height: 400,
+    resizeMode: "contain",
+    maxWidth: "100%",
+    maxHeight: 400,
+  },
+  speechBubbleLeft: {
+    position: "absolute",
+    top: 100,
+    left: "10%",
+    width: "40%",
+    zIndex: 1000,
+    elevation: 10,
+    alignItems: "flex-start",
+  },
+  speechBubbleRight: {
+    position: "absolute",
+    bottom: 160,
+    right: "10%",
+    width: "40%",
+    zIndex: 1000,
+    elevation: 10,
+    alignItems: "flex-end",
+  },
+  speechBubbleContent: {
+    backgroundColor: "#ffffff",
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: "#000000",
+    shadowColor: "#000",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 8,
+    minHeight: 60,
+    justifyContent: "center",
+  },
+  speechBubbleTailLeft: {
+    width: 20,
+    height: 20,
+    backgroundColor: "#ffffff",
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderColor: "#000000",
+    transform: [{ rotate: "45deg" }],
+    marginTop: -10,
+    marginLeft: 20,
+    alignSelf: "flex-start",
+  },
+  speechBubbleTailRight: {
+    width: 20,
+    height: 20,
+    backgroundColor: "#ffffff",
+    borderLeftWidth: 3,
+    borderTopWidth: 3,
+    borderColor: "#000000",
+    transform: [{ rotate: "45deg" }],
+    marginBottom: -10,
+    marginRight: 20,
+    alignSelf: "flex-end",
+  },
+  tapHint: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+    color: "#666",
+    fontSize: 14,
+    fontStyle: "italic",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
 });
