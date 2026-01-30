@@ -1,50 +1,82 @@
-# Welcome to your Expo app 👋
+# The Grand Line Quest 🏴‍☠️
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A personalized One Piece-themed mobile game built with React Native and Expo - because every Straw Hat deserves their own adventure.
 
-## Get started
+## About This Game
 
-1. Install dependencies
+This is a custom-built mobile game inspired by One Piece, created as a special gift. Navigate through the Grand Line, collect treasures, and test your knowledge of the Straw Hat crew's journey!
 
-   ```bash
-   npm install
-   ```
+### Features
+- 🗺️ Interactive Grand Line navigation
+- ⚔️ Character-based challenges and trivia
+- 🏆 Achievement system tracking your pirate journey
+- 📱 Cross-platform support (iOS & Android)
 
-2. Start the app
+## Getting Started
 
-   ```bash
-   npx expo start
-   ```
+### Prerequisites
+- Node.js installed on your machine
+- Expo Go app on your phone (available on App Store or Google Play)
 
-In the output, you'll find options to open the app in a
+### Installation
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+1. **Clone the repository**
+```bash
+git clone [your-repo-url]
+cd grand-line-quest
+```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+2. **Install dependencies**
+```bash
+npm install
+```
 
-## Get a fresh project
+3. **Start the development server**
+```bash
+npx expo start
+```
 
-When you're ready, run:
+4. **Run on your device**
+   - Scan the QR code with Expo Go (Android) or Camera app (iOS)
+   - Or press `a` for Android emulator / `i` for iOS simulator
 
+## Project Structure
+```
+app/
+├── (tabs)/          # Main game screens
+├── components/      # Reusable UI components
+├── assets/          # Images and game resources
+└── utils/           # Game logic and helpers
+```
+
+## Technologies Used
+
+- **React Native** - Mobile app framework
+- **Expo** - Development and build tooling
+- **TypeScript** - Type-safe code
+- **Expo Router** - File-based navigation
+
+## Development Notes
+
+To reset the project to a blank slate:
 ```bash
 npm run reset-project
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+This moves the starter code to `app-example/` and creates a fresh `app/` directory.
 
-## Learn more
+## Future Enhancements
+- [ ] Multiplayer crew battles
+- [ ] Daily challenges
+- [ ] Devil Fruit power-ups
+- [ ] Story mode following actual arcs
 
-To learn more about developing your project with Expo, look at the following resources:
+## Resources
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Docs](https://reactnative.dev/)
+- [One Piece Wiki](https://onepiece.fandom.com/) (for staying canon!)
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+*Built with ❤️ for a true nakama*
